@@ -11,5 +11,4 @@ public record UserResponse(
         String username,
         Optional<String> bio,
         Optional<String> image
-) {
-}
+) { }
