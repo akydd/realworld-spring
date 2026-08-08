@@ -26,4 +26,24 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNPROCESSABLE_CONTENT)
                 .body(new ValidationErrorResponse(errors));
     }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ValidationErrorResponse> handleException(@NonNull InvalidCredentialsException ex) {
+        Map<String, String[]> errors = new HashMap<>();
+        errors.put("credentials", new String[]{"invalid"});
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ValidationErrorResponse(errors));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ValidationErrorResponse> handleException(@NonNull Exception ex) {
+        Map<String, String[]> errors = new HashMap<>();
+        errors.put("message", new String[]{ex.getMessage()});
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ValidationErrorResponse(errors));
+    }
 }

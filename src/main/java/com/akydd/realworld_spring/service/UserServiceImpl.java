@@ -1,5 +1,6 @@
 package com.akydd.realworld_spring.service;
 
+import com.akydd.realworld_spring.exception.InvalidCredentialsException;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,5 +27,16 @@ public class UserServiceImpl implements UserService {
         savedUser.setToken(token);
 
         return savedUser;
+    }
+
+    public User loginUser(String email, String password) {
+        User user = userRepository.findByEmail(email).orElseThrow(InvalidCredentialsException::new);
+        if (!bCryptPasswordEncoder.matches(password, user.getPassword())) {
+            throw new InvalidCredentialsException();
+        }
+        String token = jwtService.generateToken(user.getId());
+        user.setToken(token);
+
+        return user;
     }
 }
