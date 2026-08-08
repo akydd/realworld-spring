@@ -13,6 +13,8 @@ public interface UserMapper {
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     User toEntity(RegisterUserRequest registerUserRequest);
 
-    @Mapping(target = "token", ignore = true)
+    // This mapping is needed to get around the user having a username, but using the userid
+    // in the userDetails.
+    @Mapping(source="realUsername", target="username")
     UserResponse toDTO(User user);
 }
