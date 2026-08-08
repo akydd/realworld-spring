@@ -6,7 +6,6 @@ import com.akydd.realworld_spring.mapper.UserMapper;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.service.UserService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,9 +26,10 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> registerUser(@Valid @NotNull @RequestBody RegisterUserRequest registerUserRequest) {
+    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody RegisterUserRequest registerUserRequest) {
         User model = userMapper.toEntity(registerUserRequest);
         User userResponse = userService.registerUser(model);
-        return new ResponseEntity<>(userMapper.toDTO(userResponse), HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(userMapper.toDTO(userResponse));
     }
 }

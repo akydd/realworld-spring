@@ -1,5 +1,6 @@
 package com.akydd.realworld_spring.config;
 
+import jakarta.servlet.DispatcherType;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
