@@ -1,6 +1,5 @@
 package com.akydd.realworld_spring.config;
 
-import jakarta.servlet.DispatcherType;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,10 +8,17 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
+
+    final private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(@NonNull HttpSecurity http) throws Exception {
@@ -20,15 +26,22 @@ public class SecurityConfiguration {
                 // No need for browser managed cookies
                 .csrf((csrf) -> csrf.disable())
 
-                // Sessions is stateless
+                // Session is stateless: NO COOKIES!
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // Which routes needs JWTs?
                 .authorizeHttpRequests((authorize) -> authorize
-                //.requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
-                        // allow everyone for now
-                    .requestMatchers(HttpMethod.POST, "/**").permitAll()
+                        // Public routes
+                        .requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
+
+                        // All others require authentication
+                        .anyRequest().authenticated()
                 )
+
+                // We aren't using the UsernamePasswordAuthenticationFilter. This just amkes sure that the
+                // jwtAuthenticationFilter is fired before all the other ones.
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 }
