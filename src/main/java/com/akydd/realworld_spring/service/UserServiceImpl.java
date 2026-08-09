@@ -1,9 +1,11 @@
 package com.akydd.realworld_spring.service;
 
-import com.akydd.realworld_spring.exception.InvalidCredentialsException;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -11,16 +13,18 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
-    public UserServiceImpl(UserRepository userRepository, JwtService jwtService, BCryptPasswordEncoder bCryptPasswordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, JwtService jwtService, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
-        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
     }
 
     public User registerUser(User user) {
-        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
 
         String token = jwtService.generateToken(savedUser.getId());
@@ -30,12 +34,12 @@ public class UserServiceImpl implements UserService {
     }
 
     public User loginUser(String email, String password) {
-        User user = userRepository.findByEmail(email).orElseThrow(InvalidCredentialsException::new);
-        if (!bCryptPasswordEncoder.matches(password, user.getPassword())) {
-            throw new InvalidCredentialsException();
-        }
-        String token = jwtService.generateToken(user.getId());
-        user.setToken(token);
+        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(email, password);
+        Authentication auth = authenticationManager.authenticate(token);
+        User user = (User) auth.getPrincipal();
+
+        String jwtToken = jwtService.generateToken(user.getId());
+        user.setToken(jwtToken);
 
         return user;
     }
