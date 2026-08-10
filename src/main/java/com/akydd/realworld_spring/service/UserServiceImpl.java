@@ -1,6 +1,7 @@
 package com.akydd.realworld_spring.service;
 
 import com.akydd.realworld_spring.model.User;
+import com.akydd.realworld_spring.model.UpdateUser;
 import com.akydd.realworld_spring.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,5 +43,19 @@ public class UserServiceImpl implements UserService {
         user.setToken(jwtToken);
 
         return user;
+    }
+
+    public User updateUser(long userId, UpdateUser updateUser) {
+        User userToUpdate = userRepository.findById(userId).orElseThrow();
+
+        // We have to check each field
+        if (updateUser.email() != null) {userToUpdate.setEmail(updateUser.email());}
+        if (updateUser.password() != null) {userToUpdate.setPassword(passwordEncoder.encode(updateUser.password()));}
+        if (updateUser.username() != null) {userToUpdate.setUsername(updateUser.username());}
+
+        if (updateUser.bio().isPresent()) {userToUpdate.setBio(updateUser.bio().get());}
+        if (updateUser.image().isPresent()) {userToUpdate.setImage(updateUser.image().get());}
+
+        return userRepository.save(userToUpdate);
     }
 }

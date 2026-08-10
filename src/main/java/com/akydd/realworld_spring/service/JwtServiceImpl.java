@@ -22,6 +22,7 @@ public class JwtServiceImpl implements JwtService {
         this.expiration = jwtExpirationInMs;
     }
 
+    @Override
     public String generateToken(Long userid) {
         return Jwts.builder()
                 .subject(userid.toString())

@@ -1,5 +1,6 @@
 package com.akydd.realworld_spring.config;
 
+import com.akydd.realworld_spring.json.TristateModule;
 import com.akydd.realworld_spring.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,5 +44,10 @@ public class ApplicationConfiguration {
             return userRepository.findById(userId)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         };
+    }
+
+    @Bean
+    public TristateModule tristateModule() {
+        return new TristateModule();
     }
 }
