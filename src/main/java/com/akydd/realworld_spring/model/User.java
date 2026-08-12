@@ -120,4 +120,8 @@ public class User implements UserDetails {
     public void addFollowing(User user) {
         this.following.add(user);
     }
+
+    public void removeFollowing(User user) {
+        this.following.remove(user);
+    }
 }

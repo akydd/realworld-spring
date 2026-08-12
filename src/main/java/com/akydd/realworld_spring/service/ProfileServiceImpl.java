@@ -27,6 +27,18 @@ public class ProfileServiceImpl implements ProfileService {
         return toProfile(me, true);
     }
 
+    @Transactional
+    public Profile unfollow(User user, String username) {
+        User userToUnfollow = userRepository.findByUsername(username).orElseThrow();
+        User me = userRepository.findById(user.getId()).orElseThrow();
+
+        if (me.getFollowing().contains(userToUnfollow)) {
+            me.removeFollowing(userToUnfollow);
+        }
+
+        return toProfile(me, false);
+    }
+
     private Profile toProfile(User user, Boolean following) {
         return new Profile(
                 user.getRealUsername(),
