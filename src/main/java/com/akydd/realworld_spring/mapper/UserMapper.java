@@ -1,7 +1,6 @@
 package com.akydd.realworld_spring.mapper;
 
 import com.akydd.realworld_spring.dto.RegisterUserRequest;
-import com.akydd.realworld_spring.dto.UpdateUserRequest;
 import com.akydd.realworld_spring.dto.UserResponse;
 import com.akydd.realworld_spring.model.User;
 import org.mapstruct.BeanMapping;
