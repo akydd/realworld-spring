@@ -39,6 +39,15 @@ public class ProfileServiceImpl implements ProfileService {
         return toProfile(me, false);
     }
 
+    @Transactional
+    public Profile get(User user, String username) {
+        User profileUser = userRepository.findByUsername(username).orElseThrow();
+
+        // This could have been handled by a custom query.
+        User me = userRepository.findById(user.getId()).orElseThrow();
+        return toProfile(profileUser, me.getFollowing().contains(profileUser));
+    }
+
     private Profile toProfile(User user, Boolean following) {
         return new Profile(
                 user.getRealUsername(),

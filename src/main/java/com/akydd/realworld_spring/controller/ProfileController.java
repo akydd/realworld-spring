@@ -32,4 +32,10 @@ public class ProfileController {
         Profile profile = profileService.unfollow(principal, username);
         return ResponseEntity.ok(profileMapper.toDTO(profile));
     }
+
+    @GetMapping("{username}")
+    public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal User principal, @PathVariable String username) {
+        Profile profile = profileService.get(principal, username);
+        return ResponseEntity.ok(profileMapper.toDTO(profile));
+    }
 }
