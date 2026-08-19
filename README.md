@@ -120,3 +120,60 @@ Putting a constraint annotation directly on a controller parameter
 throws `HandlerMethodValidationException` (→ default 400) instead of
 `MethodArgumentNotValidException` (→ the custom 422 handler). Dropping the redundant `@NotNull` and
 keeping only `@Valid @RequestBody` restores the expected exception and the 422 response.
+
+### Article tags: a unique-name many-to-many, without cascade surprises
+
+**The setup.** An `Article` has a `@ManyToMany` to `Tag`; tags live in their own table and `tags.name`
+is unique. Creating two articles that share a tag must **reuse** the existing `tags` row, never insert
+a duplicate.
+
+**Problem 1 — tags being (duplicately) persisted through the article.** With a `@ManyToMany`, two
+traps lurk: if the mapper turns the request's `tagList` into `new Tag(name)` objects *and* the
+association cascades `PERSIST`/`ALL`, saving the article re-inserts every tag — duplicating existing
+names and violating the unique constraint; if it cascades but the tags are transient, you instead get
+a "references an unsaved transient instance" error.
+
+Fix — keep tag lifecycle out of both the entity and the mapper, and reuse existing rows:
+
+- `Article.tags` has **no cascade**, so `articleRepository.save(article)` only writes `article_tags`
+  join rows and never inserts into `tags` — the linked tags must already be persisted.
+- `ArticleMapper.toEntity(...)` uses `@Mapping(target = "tags", ignore = true)`; the mapper never
+  builds `Tag` entities. The tag *names* are passed to the service separately
+  (`create(author, article, request.tagList())`).
+- `ArticleServiceImpl.create` resolves names to managed tags with a get-or-create, after
+  trim/blank-filter/`distinct`:
+
+  ```java
+  tagRepository.findByName(name).orElseGet(() -> tagRepository.save(new Tag(name)))
+  ```
+
+  Existing names are reused by reference; only genuinely new names are inserted.
+
+Backstops: the `unique` constraint on `tags.name` (the source of truth), and `Tag.equals`/`hashCode`
+based on `name` — a safe *immutable* natural key (unlike `username`/`email`), so the `HashSet<Tag>`
+dedupes correctly across sessions. A concurrent-insert race on a brand-new tag name is still possible
+and is not yet handled (would need catch-and-retry or an `INSERT ... ON CONFLICT` upsert). `Tag` also
+needs a `protected` no-arg constructor alongside the `Tag(String)` convenience one — JPA requires it,
+and declaring any constructor removes the implicit default.
+
+**Problem 2 — tags saved but absent from `ArticleResponse`.** After a correct save, the response's
+`tagList` came back empty. MapStruct could not auto-map `Article.tags` → `ArticleResponse.tagList`
+because **both the name and the type differ**: `tags` vs `tagList`, and `Set<Tag>` vs `List<String>`.
+It silently left the field unset. (This was *not* a lazy-loading problem — the service sets the tags
+in memory before saving.)
+
+Fix — declare both the rename and an element-conversion method:
+
+```java
+@Mapping(source = "tags", target = "tagList")
+ArticleResponse toResponse(Article article);
+
+default List<String> tagsToNames(Set<Tag> tags) {
+    return tags == null ? new ArrayList<>() : tags.stream().map(Tag::getName).toList();
+}
+```
+
+Related follow-up: the *update* path returns an article whose `tags` collection is lazy and never
+touched, so mapping it renders only under open-session-in-view and would throw
+`LazyInitializationException` if OSIV were disabled — a `JOIN FETCH` (or mapping inside the
+transaction) is the durable fix.

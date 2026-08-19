@@ -5,6 +5,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "articles")
@@ -27,6 +30,21 @@ public class Article {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", referencedColumnName = "id", nullable = false)
     private User author;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "article_tags",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>();
+
+    public Set<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<Tag> tags) {
+        this.tags = tags;
+    }
 
     public Long getId() {
         return id;

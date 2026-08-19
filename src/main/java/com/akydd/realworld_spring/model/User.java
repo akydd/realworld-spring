@@ -5,9 +5,7 @@ import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Entity
 @Table(name = "users")
@@ -101,19 +99,19 @@ public class User implements UserDetails {
         this.username = username;
     }
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "follows",
             joinColumns = @JoinColumn(name = "follower_id"),
             inverseJoinColumns = @JoinColumn(name = "following_id")
     )
-    private List<User> following;
+    private Set<User> following =  new HashSet<>();
 
-    public List<User> getFollowing() {
+    public Set<User> getFollowing() {
         return following;
     }
 
-    public void setFollowing(List<User> following) {
+    public void setFollowing(Set<User> following) {
         this.following = following;
     }
 

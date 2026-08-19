@@ -1,24 +1,50 @@
 package com.akydd.realworld_spring.service;
 
 import com.akydd.realworld_spring.model.Article;
+import com.akydd.realworld_spring.model.Tag;
 import com.akydd.realworld_spring.model.UpdateArticle;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.repository.ArticleRepository;
+import com.akydd.realworld_spring.repository.TagRepository;
 import com.akydd.realworld_spring.util.Slugs;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Service
 public class ArticleServiceImpl implements ArticleService {
     private final ArticleRepository articleRepository;
+    private final TagRepository tagRepository;
 
-    public ArticleServiceImpl(ArticleRepository articleRepository) {
+    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository) {
         this.articleRepository = articleRepository;
+        this.tagRepository = tagRepository;
     }
 
     @Transactional
-    public Article create(User author, Article article) {
+    public Article create(User author, Article article, List<String> tagNames) {
         article.setAuthor(author);
+
+        // Tags must be handled separately from the rest of the Article model.
+        // This handles saving new tags, not creating duplicate tags,
+        // and creating an object that Hibernate can use to link the article
+        // to those tags.
+        Set<Tag> tags = tagNames.stream()
+                .map(String::trim)
+                .filter(n -> !n.isBlank())
+                .distinct()
+                .map(name -> tagRepository.findByName(name)
+                        .orElseGet(() -> tagRepository.save(new Tag(name))))
+                .collect(Collectors.toCollection(HashSet::new));
+
+        // Link tags to the Article.
+        article.setTags(tags);
+
+        // Save the article with the tag links.
         return articleRepository.save(article);
     }
 
@@ -42,6 +68,6 @@ public class ArticleServiceImpl implements ArticleService {
             toUpdate.setBody(updateArticle.body());
         }
 
-       return articleRepository.save(toUpdate);
+        return articleRepository.save(toUpdate);
     }
 }

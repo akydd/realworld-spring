@@ -26,7 +26,7 @@ public class ArticleController {
 
     @PostMapping
     public ResponseEntity<ArticleResponse> save(@AuthenticationPrincipal User author, @Valid @RequestBody CreateArticleRequest article) {
-        Article newArticle = articleService.create(author, articleMapper.toEntity(article));
+        Article newArticle = articleService.create(author, articleMapper.toEntity(article), article.tagList());
         return ResponseEntity.status(HttpStatus.CREATED).body(articleMapper.toResponse(newArticle));
     }
 
