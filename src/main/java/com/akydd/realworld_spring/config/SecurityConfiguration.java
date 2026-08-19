@@ -34,6 +34,7 @@ public class SecurityConfiguration {
                         // Public routes
                         .requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/tags").permitAll()
 
                         // All others require authentication
                         .anyRequest().authenticated()
