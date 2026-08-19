@@ -4,7 +4,6 @@ import com.akydd.realworld_spring.dto.TagsResponse;
 import com.akydd.realworld_spring.mapper.TagMapper;
 import com.akydd.realworld_spring.model.Tag;
 import com.akydd.realworld_spring.service.TagService;
-import org.springframework.core.metrics.StartupStep;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
