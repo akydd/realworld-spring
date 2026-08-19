@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 @JsonRootName(value = "user")
 public record RegisterUserRequest(
-        @NotBlank(message = "username cannot be empty")
+        @NotBlank
         String username,
         @Email(message = "provide a valid email")
         String email,
