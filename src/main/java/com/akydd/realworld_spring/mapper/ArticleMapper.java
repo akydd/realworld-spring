@@ -3,8 +3,11 @@ package com.akydd.realworld_spring.mapper;
 import com.akydd.realworld_spring.dto.ArticleResponse;
 import com.akydd.realworld_spring.dto.CreateArticleRequest;
 import com.akydd.realworld_spring.dto.ProfileResponse;
+import com.akydd.realworld_spring.dto.UpdateArticleRequest;
 import com.akydd.realworld_spring.model.Article;
+import com.akydd.realworld_spring.model.UpdateArticle;
 import com.akydd.realworld_spring.model.User;
+import com.akydd.realworld_spring.util.Slugs;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -20,7 +23,7 @@ public interface ArticleMapper {
 
     @Named("strToSlug")
     default String strToSlug(String str) {
-        return str.replace(' ', '-').toLowerCase();
+        return Slugs.slugify(str);
     }
 
     ArticleResponse toResponse(Article article);
@@ -28,4 +31,6 @@ public interface ArticleMapper {
     @Mapping(source = "realUsername", target = "username")
     @Mapping(target = "following", constant = "false")
     ProfileResponse toProfileResponse(User author);
+
+    UpdateArticle toEntity(UpdateArticleRequest request);
 }
