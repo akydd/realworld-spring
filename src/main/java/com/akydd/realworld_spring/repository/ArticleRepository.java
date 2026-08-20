@@ -19,4 +19,7 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Article a set a.favoritesCount = a.favoritesCount - 1 where a.id = :id")
     void decreaseFavoriteCount(@Param("id") Long articleId);
+
+    @Query("select count(f) > 0 from ArticleFavorites f where f.article.id = :articleId and f.user.id = :userId")
+    boolean isFavorited(@Param("articleId") Long articleId, @Param("userId") Long userId);
 }

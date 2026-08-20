@@ -1,9 +1,6 @@
 package com.akydd.realworld_spring.service;
 
-import com.akydd.realworld_spring.model.Article;
-import com.akydd.realworld_spring.model.Tag;
-import com.akydd.realworld_spring.model.UpdateArticle;
-import com.akydd.realworld_spring.model.User;
+import com.akydd.realworld_spring.model.*;
 import com.akydd.realworld_spring.repository.ArticleRepository;
 import com.akydd.realworld_spring.repository.TagRepository;
 import com.akydd.realworld_spring.repository.UserRepository;
@@ -29,7 +26,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Transactional
-    public Article create(User author, Article article, List<String> tagNames) {
+    public ArticleView create(User author, Article article, List<String> tagNames) {
         article.setAuthor(author);
 
         // Tags must be handled separately from the rest of the Article model.
@@ -48,11 +45,12 @@ public class ArticleServiceImpl implements ArticleService {
         article.setTags(tags);
 
         // Save the article with the tag links.
-        return articleRepository.save(article);
+        Article newArticle = articleRepository.save(article);
+        return new ArticleView(newArticle, false);
     }
 
     @Transactional
-    public Article update(User user, String slug, UpdateArticle updateArticle) {
+    public ArticleView update(User user, String slug, UpdateArticle updateArticle) {
         // This makes sure that 1: the article exists, and 2: the article is authored by the caller.
         Article toUpdate = articleRepository.findBySlugAndAuthorId(slug, user.getId()).orElseThrow();
 
@@ -71,11 +69,12 @@ public class ArticleServiceImpl implements ArticleService {
             toUpdate.setBody(updateArticle.body());
         }
 
-        return articleRepository.save(toUpdate);
+        Article updatedArticle =  articleRepository.save(toUpdate);
+        return new ArticleView(updatedArticle, articleRepository.isFavorited(updatedArticle.getId(), user.getId()));
     }
 
     @Transactional
-    public Article favorite(User user, String slug) {
+    public ArticleView favorite(User user, String slug) {
         User me = userRepository.getReferenceById(user.getId());
         Article article = articleRepository.findBySlug(slug).orElseThrow();
 
@@ -85,11 +84,12 @@ public class ArticleServiceImpl implements ArticleService {
             articleRepository.increaseFavoriteCount(article.getId());
         }
 
-        return articleRepository.findById(article.getId()).orElseThrow();
+        Article updatedArticle =  articleRepository.findById(article.getId()).orElseThrow();
+        return new ArticleView(updatedArticle, true);
     }
 
     @Transactional
-    public Article unfavorite(User user, String slug) {
+    public ArticleView unfavorite(User user, String slug) {
         User me = userRepository.getReferenceById(user.getId());
         Article article = articleRepository.findBySlug(slug).orElseThrow();
 
@@ -99,6 +99,7 @@ public class ArticleServiceImpl implements ArticleService {
             articleRepository.decreaseFavoriteCount(article.getId());
         }
 
-        return articleRepository.findById(article.getId()).orElseThrow();
+        Article updatedArticle = articleRepository.findById(article.getId()).orElseThrow();
+        return new ArticleView(updatedArticle, false);
     }
 }

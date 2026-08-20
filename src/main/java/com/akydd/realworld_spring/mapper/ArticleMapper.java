@@ -4,10 +4,7 @@ import com.akydd.realworld_spring.dto.ArticleResponse;
 import com.akydd.realworld_spring.dto.CreateArticleRequest;
 import com.akydd.realworld_spring.dto.ProfileResponse;
 import com.akydd.realworld_spring.dto.UpdateArticleRequest;
-import com.akydd.realworld_spring.model.Article;
-import com.akydd.realworld_spring.model.Tag;
-import com.akydd.realworld_spring.model.UpdateArticle;
-import com.akydd.realworld_spring.model.User;
+import com.akydd.realworld_spring.model.*;
 import com.akydd.realworld_spring.util.Slugs;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -24,7 +21,8 @@ public interface ArticleMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "author", ignore = true)
     @Mapping(target = "slug", source = "title", qualifiedByName = "strToSlug")
-    @Mapping(target = "tags", ignore = true) // Tags are added manually by the AsticleService.
+    @Mapping(target = "tags", ignore = true) // Tags are added manually by the ArticleService.
+    @Mapping(target = "favoritesCount", ignore = true) // defaults to 0; maintained by the counter.
     Article toEntity(CreateArticleRequest request);
 
     @Named("strToSlug")
@@ -32,15 +30,19 @@ public interface ArticleMapper {
         return Slugs.slugify(str);
     }
 
-    @Mapping(source = "tags", target = "tagList")
-    ArticleResponse toResponse(Article article);
+    default ArticleResponse toResponse(ArticleView view) {
+        return toResponse(view.article(), view.favorited());
+    }
+
+    @Mapping(source = "article.tags", target = "tagList")
+    ArticleResponse toResponse(Article article, boolean favorited);
 
     /**
-     * Need this to map the `Set<Tag>` of the Article to
-     * a List<String> for the ArticleResponse.
+     * Need this to map the {@code Set<tag>} of the Article to
+     * a {@code List<String>} for the ArticleResponse.
      *
-     * @param tags a Set<Tag>.
-     * @return a List<String>
+     * @param tags a {@code Set<Tag>}
+     * @return a {@code List<String>}
      */
     default List<String> tagsToNames(Set<Tag> tags) {
         if (tags == null) {

@@ -4,7 +4,7 @@ import com.akydd.realworld_spring.dto.ArticleResponse;
 import com.akydd.realworld_spring.dto.CreateArticleRequest;
 import com.akydd.realworld_spring.dto.UpdateArticleRequest;
 import com.akydd.realworld_spring.mapper.ArticleMapper;
-import com.akydd.realworld_spring.model.Article;
+import com.akydd.realworld_spring.model.ArticleView;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.service.ArticleService;
 import jakarta.validation.Valid;
@@ -26,25 +26,25 @@ public class ArticleController {
 
     @PostMapping
     public ResponseEntity<ArticleResponse> save(@AuthenticationPrincipal User author, @Valid @RequestBody CreateArticleRequest article) {
-        Article newArticle = articleService.create(author, articleMapper.toEntity(article), article.tagList());
+        ArticleView newArticle = articleService.create(author, articleMapper.toEntity(article), article.tagList());
         return ResponseEntity.status(HttpStatus.CREATED).body(articleMapper.toResponse(newArticle));
     }
 
     @PutMapping("{slug}")
     public ResponseEntity<ArticleResponse> update(@AuthenticationPrincipal User user, @PathVariable String slug, @Valid @RequestBody UpdateArticleRequest update) {
-        Article updatedArticle = articleService.update(user, slug, articleMapper.toEntity(update));
+        ArticleView updatedArticle = articleService.update(user, slug, articleMapper.toEntity(update));
         return ResponseEntity.ok(articleMapper.toResponse(updatedArticle));
     }
 
     @PostMapping("{slug}/favorite")
     public ResponseEntity<ArticleResponse> favorite(@AuthenticationPrincipal User user, @PathVariable String slug) {
-        Article favoriteArticle = articleService.favorite(user, slug);
+        ArticleView favoriteArticle = articleService.favorite(user, slug);
         return ResponseEntity.ok(articleMapper.toResponse(favoriteArticle));
     }
 
     @DeleteMapping("{slug}/favorite")
     public ResponseEntity<ArticleResponse> unfavorite(@AuthenticationPrincipal User user, @PathVariable String slug) {
-        Article favoriteArticle = articleService.unfavorite(user, slug);
+        ArticleView favoriteArticle = articleService.unfavorite(user, slug);
         return ResponseEntity.ok(articleMapper.toResponse(favoriteArticle));
     }
 }
