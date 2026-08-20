@@ -53,4 +53,10 @@ public class ArticleController {
         ArticleView favoriteArticle = articleService.unfavorite(user, slug);
         return ResponseEntity.ok(articleMapper.toResponse(favoriteArticle));
     }
+
+    @GetMapping("{slug}")
+    public ResponseEntity<ArticleResponse> getArticle(@AuthenticationPrincipal User user, @PathVariable String slug) {
+        ArticleView articleView = articleService.getBySlug(user, slug);
+        return ResponseEntity.ok(articleMapper.toResponse(articleView));
+    }
 }

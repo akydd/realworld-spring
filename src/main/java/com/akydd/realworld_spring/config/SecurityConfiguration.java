@@ -36,6 +36,9 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/tags").permitAll()
 
+                        // Optional authentication
+                        .requestMatchers(HttpMethod.GET, "/api/articles/{slug}").permitAll()
+
                         // All others require authentication
                         .anyRequest().authenticated()
                 )

@@ -5,6 +5,7 @@ import com.akydd.realworld_spring.repository.ArticleRepository;
 import com.akydd.realworld_spring.repository.TagRepository;
 import com.akydd.realworld_spring.repository.UserRepository;
 import com.akydd.realworld_spring.util.Slugs;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -106,5 +107,10 @@ public class ArticleServiceImpl implements ArticleService {
     public void delete(User user, String slug) {
         Article toDelete = articleRepository.findBySlugAndAuthorId(slug, user.getId()).orElseThrow();
         articleRepository.delete(toDelete);
+    }
+
+    public ArticleView getBySlug(@Nullable User user, String slug) {
+        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        return new ArticleView(article, user != null && articleRepository.isFavorited(article.getId(), user.getId()));
     }
 }
