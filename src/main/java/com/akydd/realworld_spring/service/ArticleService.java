@@ -12,4 +12,5 @@ public interface ArticleService {
     ArticleView update(User user, String slug, UpdateArticle update);
     ArticleView favorite(User user, String slug);
     ArticleView unfavorite(User user, String slug);
+    void delete(User user, String slug);
 }

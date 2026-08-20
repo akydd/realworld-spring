@@ -36,6 +36,12 @@ public class ArticleController {
         return ResponseEntity.ok(articleMapper.toResponse(updatedArticle));
     }
 
+    @DeleteMapping("{slug}")
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal User user, @PathVariable String slug) {
+        articleService.delete(user, slug);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("{slug}/favorite")
     public ResponseEntity<ArticleResponse> favorite(@AuthenticationPrincipal User user, @PathVariable String slug) {
         ArticleView favoriteArticle = articleService.favorite(user, slug);

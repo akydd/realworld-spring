@@ -102,4 +102,9 @@ public class ArticleServiceImpl implements ArticleService {
         Article updatedArticle = articleRepository.findById(article.getId()).orElseThrow();
         return new ArticleView(updatedArticle, false);
     }
+
+    public void delete(User user, String slug) {
+        Article toDelete = articleRepository.findBySlugAndAuthorId(slug, user.getId()).orElseThrow();
+        articleRepository.delete(toDelete);
+    }
 }
