@@ -31,8 +31,24 @@ public class User implements UserDetails {
 
     @Transient
     private String token;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "follows",
+            joinColumns = @JoinColumn(name = "follower_id"),
+            inverseJoinColumns = @JoinColumn(name = "following_id")
+    )
+    private Set<User> following = new HashSet<>();
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "article_favorites",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "article_id")
+    )
+    private Set<Article> favorites = new HashSet<>();
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
     public String getToken() {
         return token;
@@ -90,22 +106,14 @@ public class User implements UserDetails {
         return String.valueOf(id);
     }
 
-    // Needed due to the above override for the UserDetails interface.
-    public String getRealUsername() {
-        return username;
-    }
-
     public void setUsername(String username) {
         this.username = username;
     }
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "follows",
-            joinColumns = @JoinColumn(name = "follower_id"),
-            inverseJoinColumns = @JoinColumn(name = "following_id")
-    )
-    private Set<User> following =  new HashSet<>();
+    // Needed due to the above override for the UserDetails interface.
+    public String getRealUsername() {
+        return username;
+    }
 
     public Set<User> getFollowing() {
         return following;
@@ -121,5 +129,21 @@ public class User implements UserDetails {
 
     public void removeFollowing(User user) {
         this.following.remove(user);
+    }
+
+    public Set<Article> getFavorites() {
+        return favorites;
+    }
+
+    public void setFavorites(Set<Article> favorites) {
+        this.favorites = favorites;
+    }
+
+    public void addFavorite(Article article) {
+        this.favorites.add(article);
+    }
+
+    public void removeFavorite(Article article) {
+        this.favorites.remove(article);
     }
 }

@@ -1,0 +1,1 @@
+alter table articles add column if not exists favorites_count integer not null default 0;

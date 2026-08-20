@@ -6,6 +6,7 @@ import com.akydd.realworld_spring.model.UpdateArticle;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.repository.ArticleRepository;
 import com.akydd.realworld_spring.repository.TagRepository;
+import com.akydd.realworld_spring.repository.UserRepository;
 import com.akydd.realworld_spring.util.Slugs;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +20,12 @@ import java.util.stream.Collectors;
 public class ArticleServiceImpl implements ArticleService {
     private final ArticleRepository articleRepository;
     private final TagRepository tagRepository;
+    private final UserRepository userRepository;
 
-    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository) {
+    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository) {
         this.articleRepository = articleRepository;
         this.tagRepository = tagRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -69,5 +72,33 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         return articleRepository.save(toUpdate);
+    }
+
+    @Transactional
+    public Article favorite(User user, String slug) {
+        User me = userRepository.getReferenceById(user.getId());
+        Article article = articleRepository.findBySlug(slug).orElseThrow();
+
+        if (!me.getFavorites().contains(article)) {
+            me.addFavorite(article);
+            userRepository.save(me);
+            articleRepository.increaseFavoriteCount(article.getId());
+        }
+
+        return articleRepository.findById(article.getId()).orElseThrow();
+    }
+
+    @Transactional
+    public Article unfavorite(User user, String slug) {
+        User me = userRepository.getReferenceById(user.getId());
+        Article article = articleRepository.findBySlug(slug).orElseThrow();
+
+        if (me.getFavorites().contains(article)) {
+            me.removeFavorite(article);
+            userRepository.save(me);
+            articleRepository.decreaseFavoriteCount(article.getId());
+        }
+
+        return articleRepository.findById(article.getId()).orElseThrow();
     }
 }

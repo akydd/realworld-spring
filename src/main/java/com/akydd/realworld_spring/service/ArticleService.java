@@ -9,4 +9,6 @@ import java.util.List;
 public interface ArticleService {
     Article create(User author, Article article, List<String> tagNames);
     Article update(User user, String slug, UpdateArticle update);
+    Article favorite(User user, String slug);
+    Article unfavorite(User user, String slug);
 }
