@@ -1,9 +1,6 @@
 package com.akydd.realworld_spring.service;
 
-import com.akydd.realworld_spring.model.Article;
-import com.akydd.realworld_spring.model.ArticleView;
-import com.akydd.realworld_spring.model.UpdateArticle;
-import com.akydd.realworld_spring.model.User;
+import com.akydd.realworld_spring.model.*;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
@@ -15,4 +12,5 @@ public interface ArticleService {
     ArticleView unfavorite(User user, String slug);
     void delete(User user, String slug);
     ArticleView getBySlug(@Nullable User user, String slug);
+    CommentView addComment(User user, String slug, Comment comment);
 }

@@ -2,6 +2,7 @@ package com.akydd.realworld_spring.service;
 
 import com.akydd.realworld_spring.model.*;
 import com.akydd.realworld_spring.repository.ArticleRepository;
+import com.akydd.realworld_spring.repository.CommentRepository;
 import com.akydd.realworld_spring.repository.TagRepository;
 import com.akydd.realworld_spring.repository.UserRepository;
 import com.akydd.realworld_spring.util.Slugs;
@@ -19,11 +20,13 @@ public class ArticleServiceImpl implements ArticleService {
     private final ArticleRepository articleRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
-    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository) {
+    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository, CommentRepository commentRepository) {
         this.articleRepository = articleRepository;
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
     }
 
     @Transactional
@@ -112,5 +115,15 @@ public class ArticleServiceImpl implements ArticleService {
     public ArticleView getBySlug(@Nullable User user, String slug) {
         Article article = articleRepository.findBySlug(slug).orElseThrow();
         return new ArticleView(article, user != null && articleRepository.isFavorited(article.getId(), user.getId()));
+    }
+
+    @Transactional
+    public CommentView addComment(User user, String slug, Comment comment) {
+        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        comment.setArticle(article);
+        comment.setAuthor(user);
+
+        Comment savedComment = commentRepository.save(comment);
+        return new CommentView(savedComment, true);
     }
 }

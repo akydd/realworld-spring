@@ -1,10 +1,11 @@
 package com.akydd.realworld_spring.controller;
 
-import com.akydd.realworld_spring.dto.ArticleResponse;
-import com.akydd.realworld_spring.dto.CreateArticleRequest;
-import com.akydd.realworld_spring.dto.UpdateArticleRequest;
+import com.akydd.realworld_spring.dto.*;
 import com.akydd.realworld_spring.mapper.ArticleMapper;
+import com.akydd.realworld_spring.mapper.CommentMapper;
 import com.akydd.realworld_spring.model.ArticleView;
+import com.akydd.realworld_spring.model.Comment;
+import com.akydd.realworld_spring.model.CommentView;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.service.ArticleService;
 import jakarta.validation.Valid;
@@ -18,10 +19,12 @@ import org.springframework.web.bind.annotation.*;
 public class ArticleController {
     private final ArticleService articleService;
     private final ArticleMapper articleMapper;
+    private final CommentMapper commentMapper;
 
-    public ArticleController(ArticleService articleService, ArticleMapper articleMapper) {
+    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, CommentMapper commentMapper) {
         this.articleService = articleService;
         this.articleMapper = articleMapper;
+        this.commentMapper = commentMapper;
     }
 
     @PostMapping
@@ -58,5 +61,11 @@ public class ArticleController {
     public ResponseEntity<ArticleResponse> getArticle(@AuthenticationPrincipal User user, @PathVariable String slug) {
         ArticleView articleView = articleService.getBySlug(user, slug);
         return ResponseEntity.ok(articleMapper.toResponse(articleView));
+    }
+
+    @PostMapping("{slug}/comments")
+    public ResponseEntity<CommentResponse> addComment(@AuthenticationPrincipal User user, @PathVariable String slug, @Valid @RequestBody CreateCommentRequest comment) {
+        CommentView newComment = articleService.addComment(user, slug, commentMapper.toEntity(comment));
+        return ResponseEntity.ok(commentMapper.toResponse(newComment));
     }
 }
