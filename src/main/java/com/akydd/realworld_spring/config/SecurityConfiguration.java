@@ -38,6 +38,7 @@ public class SecurityConfiguration {
 
                         // Optional authentication
                         .requestMatchers(HttpMethod.GET, "/api/articles/{slug}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/articles/{slug}/comments").permitAll()
 
                         // All others require authentication
                         .anyRequest().authenticated()

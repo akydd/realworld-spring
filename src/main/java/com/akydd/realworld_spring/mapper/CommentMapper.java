@@ -1,6 +1,7 @@
 package com.akydd.realworld_spring.mapper;
 
 import com.akydd.realworld_spring.dto.CommentResponse;
+import com.akydd.realworld_spring.dto.CommentsResponse;
 import com.akydd.realworld_spring.dto.CreateCommentRequest;
 import com.akydd.realworld_spring.dto.ProfileResponse;
 import com.akydd.realworld_spring.model.Comment;
@@ -9,6 +10,8 @@ import com.akydd.realworld_spring.model.Profile;
 import com.akydd.realworld_spring.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface CommentMapper {
@@ -29,4 +32,9 @@ public interface CommentMapper {
     @Mapping(source = "following", target = "following")
     @Mapping(source = "author.realUsername", target = "username")
     ProfileResponse toProfileResponse(User author, boolean following);
+
+    default CommentsResponse toResponse(List<CommentView> views) {
+        List<CommentResponse> responses = views.stream().map(this::toResponse).toList();
+        return new CommentsResponse(responses);
+    }
 }

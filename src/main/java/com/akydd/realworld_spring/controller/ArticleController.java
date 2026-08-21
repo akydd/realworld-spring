@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/articles")
 public class ArticleController {
@@ -73,5 +75,11 @@ public class ArticleController {
     public ResponseEntity<Void> deleteComment(@AuthenticationPrincipal User user, @PathVariable String slug, @PathVariable Long id) {
         articleService.deleteComment(user, slug, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("{slug}/comments")
+    public ResponseEntity<CommentsResponse> getComments(@AuthenticationPrincipal User user, @PathVariable String slug) {
+        List<CommentView> comments = articleService.getComments(user, slug);
+        return ResponseEntity.ok(commentMapper.toResponse(comments));
     }
 }

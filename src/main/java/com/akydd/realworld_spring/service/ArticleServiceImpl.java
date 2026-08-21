@@ -141,4 +141,13 @@ public class ArticleServiceImpl implements ArticleService {
 
         commentRepository.delete(comment);
     }
+
+    public List<CommentView>  getComments(User user, String slug) {
+        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        List<Comment> comments = commentRepository.findByArticleIdOrderByCreatedAtAsc(article.getId());
+
+        return comments.stream()
+                .map(comment -> new CommentView(comment, user != null && userRepository.isFollowing(user.getId(), comment.getAuthor().getId())))
+                .toList();
+    }
 }
