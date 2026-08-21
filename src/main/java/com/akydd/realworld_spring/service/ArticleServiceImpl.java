@@ -126,4 +126,19 @@ public class ArticleServiceImpl implements ArticleService {
         Comment savedComment = commentRepository.save(comment);
         return new CommentView(savedComment, true);
     }
+
+    public void deleteComment(User user, String slug, Long commentId) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow();
+        Article article = articleRepository.findBySlug(slug).orElseThrow();
+
+        if (!comment.getArticle().getId().equals(article.getId())) {
+            throw new RuntimeException("nope");
+        }
+
+        if (!comment.getAuthor().getId().equals(user.getId())) {
+            throw new RuntimeException("nope");
+        }
+
+        commentRepository.delete(comment);
+    }
 }

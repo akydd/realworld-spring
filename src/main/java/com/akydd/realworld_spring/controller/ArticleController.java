@@ -68,4 +68,10 @@ public class ArticleController {
         CommentView newComment = articleService.addComment(user, slug, commentMapper.toEntity(comment));
         return ResponseEntity.ok(commentMapper.toResponse(newComment));
     }
+
+    @DeleteMapping("{slug}/comments/{id}")
+    public ResponseEntity<Void> deleteComment(@AuthenticationPrincipal User user, @PathVariable String slug, @PathVariable Long id) {
+        articleService.deleteComment(user, slug, id);
+        return ResponseEntity.noContent().build();
+    }
 }

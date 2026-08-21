@@ -13,4 +13,5 @@ public interface ArticleService {
     void delete(User user, String slug);
     ArticleView getBySlug(@Nullable User user, String slug);
     CommentView addComment(User user, String slug, Comment comment);
+    void deleteComment(User user, String slug, Long commentId);
 }
