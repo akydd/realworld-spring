@@ -1,7 +1,7 @@
 package com.akydd.realworld_spring.model;
 
-public record ArticleView(
-        Article article,
+public record ArticleSummaryView(
+        ArticleSummary article,
         boolean favorited,
         boolean following
 ) {

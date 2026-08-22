@@ -23,4 +23,6 @@ public interface ArticleService {
     void deleteComment(User user, String slug, Long commentId);
 
     List<CommentView> getComments(User user, String slug);
+
+    List<ArticleSummaryView> getAllArticles(@Nullable User user);
 }

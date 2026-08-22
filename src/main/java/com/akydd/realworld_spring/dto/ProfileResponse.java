@@ -9,6 +9,6 @@ public record ProfileResponse(
         String username,
         Optional<String> bio,
         Optional<String> image,
-        Boolean following
+        boolean following
 ) {
 }

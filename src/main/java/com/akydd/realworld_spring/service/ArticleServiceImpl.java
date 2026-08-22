@@ -50,7 +50,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         // Save the article with the tag links.
         Article newArticle = articleRepository.save(article);
-        return new ArticleView(newArticle, false);
+        return new ArticleView(newArticle, false, false);
     }
 
     @Transactional
@@ -74,7 +74,10 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         Article updatedArticle =  articleRepository.save(toUpdate);
-        return new ArticleView(updatedArticle, articleRepository.isFavorited(updatedArticle.getId(), user.getId()));
+        return new ArticleView(updatedArticle,
+                articleRepository.isFavorited(updatedArticle.getId(), user.getId()),
+                false
+        );
     }
 
     @Transactional
@@ -89,7 +92,8 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         Article updatedArticle =  articleRepository.findById(article.getId()).orElseThrow();
-        return new ArticleView(updatedArticle, true);
+        return new ArticleView(updatedArticle, true,
+                userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
     }
 
     @Transactional
@@ -104,7 +108,8 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         Article updatedArticle = articleRepository.findById(article.getId()).orElseThrow();
-        return new ArticleView(updatedArticle, false);
+        return new ArticleView(updatedArticle, false,
+                userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
     }
 
     public void delete(User user, String slug) {
@@ -114,7 +119,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     public ArticleView getBySlug(@Nullable User user, String slug) {
         Article article = articleRepository.findBySlug(slug).orElseThrow();
-        return new ArticleView(article, user != null && articleRepository.isFavorited(article.getId(), user.getId()));
+        return new ArticleView(article,
+                user != null && articleRepository.isFavorited(article.getId(), user.getId()),
+                user != null && userRepository.isFollowing(user.getId(), article.getAuthor().getId()));
     }
 
     @Transactional
@@ -148,6 +155,17 @@ public class ArticleServiceImpl implements ArticleService {
 
         return comments.stream()
                 .map(comment -> new CommentView(comment, user != null && userRepository.isFollowing(user.getId(), comment.getAuthor().getId())))
+                .toList();
+    }
+
+    public List<ArticleSummaryView> getAllArticles(User user) {
+        List<ArticleSummary> articles = articleRepository.findAllBy();
+
+        return articles.stream()
+                .map(article -> new ArticleSummaryView(article,
+                        user != null && articleRepository.isFavorited(article.getId(), user.getId()),
+                        user != null && userRepository.isFollowing(user.getId(), article.getAuthor().getId()))
+                )
                 .toList();
     }
 }

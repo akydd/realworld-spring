@@ -21,8 +21,10 @@ public interface ArticleMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "author", ignore = true)
     @Mapping(target = "slug", source = "title", qualifiedByName = "strToSlug")
+    @Mapping(target = "comments", ignore = true)
     @Mapping(target = "tags", ignore = true) // Tags are added manually by the ArticleService.
-    @Mapping(target = "favoritesCount", ignore = true) // defaults to 0; maintained by the counter.
+    @Mapping(target = "favoritesCount", ignore = true)
+        // defaults to 0; maintained by the counter.
     Article toEntity(CreateArticleRequest request);
 
     @Named("strToSlug")
@@ -31,11 +33,13 @@ public interface ArticleMapper {
     }
 
     default ArticleResponse toResponse(ArticleView view) {
-        return toResponse(view.article(), view.favorited());
+        return toResponse(view.article(), view.favorited(), view.following());
     }
 
     @Mapping(source = "article.tags", target = "tagList")
-    ArticleResponse toResponse(Article article, boolean favorited);
+    @Mapping(target = "author", expression = "java(toProfileResponse(article.getAuthor(), following))")
+    ArticleResponse toResponse(Article article, boolean favorited, boolean following);
+
 
     /**
      * Need this to map the {@code Set<tag>} of the Article to
@@ -52,9 +56,9 @@ public interface ArticleMapper {
         return tags.stream().map(Tag::getName).toList();
     }
 
-    @Mapping(source = "realUsername", target = "username")
-    @Mapping(target = "following", constant = "false")
-    ProfileResponse toProfileResponse(User author);
+    @Mapping(source = "author.realUsername", target = "username")
+    @Mapping(target = "following", source = "following")
+    ProfileResponse toProfileResponse(User author, boolean following);
 
     UpdateArticle toEntity(UpdateArticleRequest request);
 }
