@@ -31,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>All suites share one Postgres container and one application context (Spring context caching),
  * so the container starts once for the whole run.
  */
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 @Tag("integration")
@@ -41,9 +40,15 @@ abstract class ApiTestSupport {
      * Matches the leading ISO-8601 date-time the API emits, e.g. {@code 2026-08-23T21:09:52...}.
      */
     protected static final String ISO_TS = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*";
-    @Container
+    // Singleton container shared across all api suites: started once, never stopped between classes
+    // (Ryuk cleans it up at JVM exit). Using @Container/@Testcontainers would stop it after the first
+    // class and the next suite would hit "connection refused".
     @ServiceConnection
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(DockerImageName.parse("postgres:18"));
+
+    static {
+        POSTGRES.start();
+    }
     private static final AtomicInteger COUNTER = new AtomicInteger();
     /**
      * Plain mapper for wire JSON — deliberately not the app's wrap/unwrap-configured ObjectMapper.

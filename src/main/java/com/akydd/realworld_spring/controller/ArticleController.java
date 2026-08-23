@@ -11,7 +11,10 @@ import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.service.ArticleService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,12 +27,14 @@ public class ArticleController {
     private final ArticleMapper articleMapper;
     private final CommentMapper commentMapper;
     private final ArticleSummaryMapper articleSummaryMapper;
+    private final ObjectMapper objectMapper;
 
-    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, CommentMapper commentMapper, ArticleSummaryMapper articleSummaryMapper) {
+    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, CommentMapper commentMapper, ArticleSummaryMapper articleSummaryMapper, ObjectMapper objectMapper) {
         this.articleService = articleService;
         this.articleMapper = articleMapper;
         this.commentMapper = commentMapper;
         this.articleSummaryMapper = articleSummaryMapper;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping
@@ -87,13 +92,28 @@ public class ArticleController {
     }
 
     @GetMapping
-    public ResponseEntity<ArticlesResponse> getArticles(@AuthenticationPrincipal User user,
-                                                        @RequestParam(required = false) String tag,
-                                                        @RequestParam(required = false) String author,
-                                                        @RequestParam(required = false) String favorited,
-                                                        @RequestParam(required = false) Integer limit,
-                                                        @RequestParam(required = false) Integer offset) {
-        List<ArticleSummaryView> articles = articleService.getAllArticles(user, tag, author, favorited, limit, offset);
-        return ResponseEntity.ok(articleSummaryMapper.toResponse(articles));
+    public ResponseEntity<String> getArticles(@AuthenticationPrincipal User user,
+                                              @RequestParam(required = false) String tag,
+                                              @RequestParam(required = false) String author,
+                                              @RequestParam(required = false) String favorited,
+                                              @RequestParam(required = false) Integer limit,
+                                              @RequestParam(required = false) Integer offset) {
+        return unwrapped(articleService.getAllArticles(user, tag, author, favorited, limit, offset));
+    }
+
+    @GetMapping("/feed")
+    public ResponseEntity<String> getFeed(@AuthenticationPrincipal User user,
+                                          @RequestParam(required = false) Integer limit,
+                                          @RequestParam(required = false) Integer offset) {
+        return unwrapped(articleService.getFeed(user, limit, offset));
+    }
+
+    // The list/feed response has two top-level keys ({"articles":[...],"articlesCount":N}), which the
+    // app's global WRAP_ROOT_VALUE can't express — serialize it here with wrapping disabled.
+    private ResponseEntity<String> unwrapped(ArticlesResponse body) {
+        String json = objectMapper.writer()
+                .without(SerializationFeature.WRAP_ROOT_VALUE)
+                .writeValueAsString(body);
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json);
     }
 }

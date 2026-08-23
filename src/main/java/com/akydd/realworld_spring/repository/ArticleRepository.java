@@ -2,6 +2,8 @@ package com.akydd.realworld_spring.repository;
 
 import com.akydd.realworld_spring.model.Article;
 import com.akydd.realworld_spring.model.ArticleSummary;
+import com.akydd.realworld_spring.model.ArticleSummaryRow;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +29,54 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     boolean isFavorited(@Param("articleId") Long articleId, @Param("userId") Long userId);
 
     List<ArticleSummary> findAllBy();
+
+    // --- List with optional filters (author / tag / favorited-by), viewer-relative flags computed ---
+
+    @Query("""
+            select new com.akydd.realworld_spring.model.ArticleSummaryRow(
+                a.id, a.slug, a.title, a.description, a.createdAt, a.updatedAt, a.favoritesCount,
+                a.author.username, a.author.bio, a.author.image,
+                (case when exists (select 1 from ArticleFavorites fv where fv.article.id = a.id and fv.user.id = :viewerId) then true else false end),
+                (case when exists (select 1 from Follows fo where fo.following.id = a.author.id and fo.follower.id = :viewerId) then true else false end))
+            from Article a
+            where (:author is null or a.author.username = :author)
+              and (:tag is null or exists (select 1 from a.tags t where t.name = :tag))
+              and (:favorited is null or exists (select 1 from ArticleFavorites ff where ff.article.id = a.id and ff.user.username = :favorited))
+            order by a.createdAt desc
+            """)
+    List<ArticleSummaryRow> searchArticles(@Param("viewerId") Long viewerId,
+                                           @Param("author") String author,
+                                           @Param("tag") String tag,
+                                           @Param("favorited") String favorited,
+                                           Pageable pageable);
+
+    @Query("""
+            select count(a) from Article a
+            where (:author is null or a.author.username = :author)
+              and (:tag is null or exists (select 1 from a.tags t where t.name = :tag))
+              and (:favorited is null or exists (select 1 from ArticleFavorites ff where ff.article.id = a.id and ff.user.username = :favorited))
+            """)
+    long countArticles(@Param("author") String author, @Param("tag") String tag, @Param("favorited") String favorited);
+
+    // --- Feed: articles by followed authors (following is always true here) ---
+
+    @Query("""
+            select new com.akydd.realworld_spring.model.ArticleSummaryRow(
+                a.id, a.slug, a.title, a.description, a.createdAt, a.updatedAt, a.favoritesCount,
+                a.author.username, a.author.bio, a.author.image,
+                (case when exists (select 1 from ArticleFavorites fv where fv.article.id = a.id and fv.user.id = :viewerId) then true else false end),
+                true)
+            from Article a
+            where exists (select 1 from Follows fo where fo.following.id = a.author.id and fo.follower.id = :viewerId)
+            order by a.createdAt desc
+            """)
+    List<ArticleSummaryRow> feedArticles(@Param("viewerId") Long viewerId, Pageable pageable);
+
+    @Query("select count(a) from Article a where exists (select 1 from Follows fo where fo.following.id = a.author.id and fo.follower.id = :viewerId)")
+    long countFeed(@Param("viewerId") Long viewerId);
+
+    // --- Batched tag names for a page of article ids ---
+
+    @Query("select a.id as articleId, t.name as name from Article a join a.tags t where a.id in :ids")
+    List<ArticleTagRow> tagRows(@Param("ids") List<Long> ids);
 }

@@ -1,17 +1,27 @@
 package com.akydd.realworld_spring.service;
 
+import com.akydd.realworld_spring.dto.ArticleSummaryResponse;
+import com.akydd.realworld_spring.dto.ArticlesResponse;
+import com.akydd.realworld_spring.dto.ProfileResponse;
+import com.akydd.realworld_spring.exception.NotFoundException;
 import com.akydd.realworld_spring.model.*;
 import com.akydd.realworld_spring.repository.ArticleRepository;
+import com.akydd.realworld_spring.repository.ArticleTagRow;
 import com.akydd.realworld_spring.repository.CommentRepository;
 import com.akydd.realworld_spring.repository.TagRepository;
 import com.akydd.realworld_spring.repository.UserRepository;
+import com.akydd.realworld_spring.util.OffsetPageable;
 import com.akydd.realworld_spring.util.Slugs;
 import jakarta.annotation.Nullable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,13 +47,14 @@ public class ArticleServiceImpl implements ArticleService {
         // This handles saving new tags, not creating duplicate tags,
         // and creating an object that Hibernate can use to link the article
         // to those tags.
-        Set<Tag> tags = tagNames.stream()
+        // Preserve request order (LinkedHashSet) and tolerate an absent tagList (null).
+        Set<Tag> tags = (tagNames == null ? List.<String>of() : tagNames).stream()
                 .map(String::trim)
                 .filter(n -> !n.isBlank())
                 .distinct()
                 .map(name -> tagRepository.findByName(name)
                         .orElseGet(() -> tagRepository.save(new Tag(name))))
-                .collect(Collectors.toCollection(HashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         // Link tags to the Article.
         article.setTags(tags);
@@ -71,6 +82,19 @@ public class ArticleServiceImpl implements ArticleService {
 
         if (updateArticle.body() != null && !updateArticle.body().isEmpty()) {
             toUpdate.setBody(updateArticle.body());
+        }
+
+        // tagList tri-state: absent -> preserve; present (including []) -> replace with resolved tags.
+        if (updateArticle.tagList() != null && updateArticle.tagList().isPresent()) {
+            List<String> names = updateArticle.tagList().get();
+            Set<Tag> tags = (names == null ? List.<String>of() : names).stream()
+                    .map(String::trim)
+                    .filter(n -> !n.isBlank())
+                    .distinct()
+                    .map(name -> tagRepository.findByName(name)
+                            .orElseGet(() -> tagRepository.save(new Tag(name))))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            toUpdate.setTags(tags);
         }
 
         Article updatedArticle = articleRepository.save(toUpdate);
@@ -118,7 +142,8 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     public ArticleView getBySlug(@Nullable User user, String slug) {
-        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        Article article = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new NotFoundException("article"));
         return new ArticleView(article,
                 user != null && articleRepository.isFavorited(article.getId(), user.getId()),
                 user != null && userRepository.isFollowing(user.getId(), article.getAuthor().getId()));
@@ -158,14 +183,43 @@ public class ArticleServiceImpl implements ArticleService {
                 .toList();
     }
 
-    public List<ArticleSummaryView> getAllArticles(User user, String tag, String author, String favorited, Integer limit, Integer offset) {
-        List<ArticleSummary> articles = articleRepository.findAllBy();
+    @Transactional(readOnly = true)
+    public ArticlesResponse getAllArticles(User user, String tag, String author, String favorited, Integer limit, Integer offset) {
+        Long viewerId = (user != null) ? user.getId() : null;
+        Pageable pageable = new OffsetPageable(offset != null ? offset : 0, limit != null ? limit : 20);
+        List<ArticleSummaryRow> rows = articleRepository.searchArticles(viewerId, author, tag, favorited, pageable);
+        long total = articleRepository.countArticles(author, tag, favorited);
+        return assemble(rows, total);
+    }
 
-        return articles.stream()
-                .map(article -> new ArticleSummaryView(article,
-                        user != null && articleRepository.isFavorited(article.getId(), user.getId()),
-                        user != null && userRepository.isFollowing(user.getId(), article.getAuthor().getId()))
-                )
+    @Transactional(readOnly = true)
+    public ArticlesResponse getFeed(User user, Integer limit, Integer offset) {
+        Pageable pageable = new OffsetPageable(offset != null ? offset : 0, limit != null ? limit : 20);
+        List<ArticleSummaryRow> rows = articleRepository.feedArticles(user.getId(), pageable);
+        long total = articleRepository.countFeed(user.getId());
+        return assemble(rows, total);
+    }
+
+    /** Stitch the batched tag names onto the projected rows and build the response DTO. */
+    private ArticlesResponse assemble(List<ArticleSummaryRow> rows, long total) {
+        List<Long> ids = rows.stream().map(ArticleSummaryRow::id).toList();
+        Map<Long, List<String>> tagsById = ids.isEmpty()
+                ? Map.of()
+                : articleRepository.tagRows(ids).stream()
+                        .collect(Collectors.groupingBy(ArticleTagRow::getArticleId,
+                                Collectors.mapping(ArticleTagRow::getName, Collectors.toList())));
+
+        List<ArticleSummaryResponse> items = rows.stream()
+                .map(r -> new ArticleSummaryResponse(
+                        r.slug(), r.title(), r.description(),
+                        tagsById.getOrDefault(r.id(), List.of()),
+                        r.createdAt(), r.updatedAt(), r.favorited(), r.favoritesCount(),
+                        new ProfileResponse(r.authorUsername(),
+                                Optional.ofNullable(r.authorBio()),
+                                Optional.ofNullable(r.authorImage()),
+                                r.following())))
                 .toList();
+
+        return new ArticlesResponse(items, (int) total);
     }
 }
