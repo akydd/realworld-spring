@@ -42,6 +42,16 @@ public class GlobalExceptionHandler {
                 .body(new ValidationErrorResponse(errors));
     }
 
+    @ExceptionHandler(DuplicateFieldException.class)
+    public ResponseEntity<ValidationErrorResponse> handleDuplicateFieldException(@NonNull DuplicateFieldException ex) {
+        Map<String, String[]> errors = new HashMap<>();
+        String fieldName = ex.getField();
+        errors.put(fieldName, new String[]{"has already been taken"});
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ValidationErrorResponse(errors));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ValidationErrorResponse> handleException(@NonNull Exception ex, HttpServletRequest request) {
         // Log the error

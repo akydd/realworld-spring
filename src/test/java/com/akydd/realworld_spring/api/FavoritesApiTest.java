@@ -7,7 +7,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code favorites.hurl}: favorite / unfavorite an article and list by favorited user. */
+/**
+ * Mirrors {@code favorites.hurl}: favorite / unfavorite an article and list by favorited user.
+ */
 @DisplayName("Favorites API (favorites.hurl)")
 class FavoritesApiTest extends ApiTestSupport {
 

@@ -6,7 +6,9 @@ import org.springframework.http.HttpStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code errors_articles.hurl}: auth requirements, validation, unknown slugs, dup titles. */
+/**
+ * Mirrors {@code errors_articles.hurl}: auth requirements, validation, unknown slugs, dup titles.
+ */
 @DisplayName("Article errors (errors_articles.hurl)")
 class ErrorsArticlesApiTest extends ApiTestSupport {
 
@@ -17,7 +19,7 @@ class ErrorsArticlesApiTest extends ApiTestSupport {
 
         // --- endpoints that require a token ---
         assertError(body(expect(post("/api/articles",
-                "{\"article\":{\"title\":\"No Auth Article\",\"description\":\"test\",\"body\":\"test\"}}", null),
+                        "{\"article\":{\"title\":\"No Auth Article\",\"description\":\"test\",\"body\":\"test\"}}", null),
                 HttpStatus.UNAUTHORIZED, "create no auth")), "token", "is missing", "create no auth");
         assertError(body(expect(get("/api/articles/unknown-slug-" + uid, null),
                 HttpStatus.NOT_FOUND, "GET unknown slug")), "article", "not found", "GET unknown slug");

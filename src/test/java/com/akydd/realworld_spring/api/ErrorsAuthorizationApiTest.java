@@ -7,7 +7,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code errors_authorization.hurl}: only owners may modify their articles and comments. */
+/**
+ * Mirrors {@code errors_authorization.hurl}: only owners may modify their articles and comments.
+ */
 @DisplayName("Authorization errors (errors_authorization.hurl)")
 class ErrorsAuthorizationApiTest extends ApiTestSupport {
 
@@ -30,7 +32,7 @@ class ErrorsAuthorizationApiTest extends ApiTestSupport {
 
         // A comments; B cannot delete A's comment
         long commentId = body(expect(post("/api/articles/" + slug + "/comments",
-                "{\"comment\":{\"body\":\"A's comment\"}}", tokenA),
+                        "{\"comment\":{\"body\":\"A's comment\"}}", tokenA),
                 HttpStatus.CREATED, "A comments")).path("comment").path("id").asLong();
         assertError(body(expect(delete("/api/articles/" + slug + "/comments/" + commentId, tokenB),
                 HttpStatus.FORBIDDEN, "B deletes A's comment")), "comment", "forbidden", "B deletes A's comment");

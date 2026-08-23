@@ -4,7 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
-/** Mirrors {@code errors_auth.hurl}: registration/login validation, duplicates, and PUT /user rules. */
+/**
+ * Mirrors {@code errors_auth.hurl}: registration/login validation, duplicates, and PUT /user rules.
+ */
 @DisplayName("Auth errors (errors_auth.hurl)")
 class ErrorsAuthApiTest extends ApiTestSupport {
 
@@ -15,13 +17,13 @@ class ErrorsAuthApiTest extends ApiTestSupport {
 
         // --- registration validation ---
         assertError(body(expect(post("/api/users",
-                "{\"user\":{\"username\":\"\",\"email\":\"ea_blank_" + uid + "@test.com\",\"password\":\"password123\"}}", null),
+                        "{\"user\":{\"username\":\"\",\"email\":\"ea_blank_" + uid + "@test.com\",\"password\":\"password123\"}}", null),
                 HttpStatus.UNPROCESSABLE_CONTENT, "register blank username")), "username", "can't be blank", "register blank username");
         assertError(body(expect(post("/api/users",
-                "{\"user\":{\"username\":\"ea_blank_" + uid + "\",\"email\":\"\",\"password\":\"password123\"}}", null),
+                        "{\"user\":{\"username\":\"ea_blank_" + uid + "\",\"email\":\"\",\"password\":\"password123\"}}", null),
                 HttpStatus.UNPROCESSABLE_CONTENT, "register blank email")), "email", "can't be blank", "register blank email");
         assertError(body(expect(post("/api/users",
-                "{\"user\":{\"username\":\"ea_blankp_" + uid + "\",\"email\":\"ea_blankp_" + uid + "@test.com\",\"password\":\"\"}}", null),
+                        "{\"user\":{\"username\":\"ea_blankp_" + uid + "\",\"email\":\"ea_blankp_" + uid + "@test.com\",\"password\":\"\"}}", null),
                 HttpStatus.UNPROCESSABLE_CONTENT, "register blank password")), "password", "can't be blank", "register blank password");
 
         // --- a valid user, then duplicate username / email -> 409 ---
@@ -30,10 +32,10 @@ class ErrorsAuthApiTest extends ApiTestSupport {
         String token = register(dupUser, dupEmail, "password123");
 
         assertError(body(expect(post("/api/users",
-                "{\"user\":{\"username\":\"" + dupUser + "\",\"email\":\"ea_dup2_" + uid + "@test.com\",\"password\":\"password123\"}}", null),
+                        "{\"user\":{\"username\":\"" + dupUser + "\",\"email\":\"ea_dup2_" + uid + "@test.com\",\"password\":\"password123\"}}", null),
                 HttpStatus.CONFLICT, "duplicate username")), "username", "has already been taken", "duplicate username");
         assertError(body(expect(post("/api/users",
-                "{\"user\":{\"username\":\"ea_dup2_" + uid + "\",\"email\":\"" + dupEmail + "\",\"password\":\"password123\"}}", null),
+                        "{\"user\":{\"username\":\"ea_dup2_" + uid + "\",\"email\":\"" + dupEmail + "\",\"password\":\"password123\"}}", null),
                 HttpStatus.CONFLICT, "duplicate email")), "email", "has already been taken", "duplicate email");
 
         // --- login validation + wrong credentials ---

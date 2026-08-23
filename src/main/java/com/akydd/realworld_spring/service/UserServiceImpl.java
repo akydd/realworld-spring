@@ -1,5 +1,6 @@
 package com.akydd.realworld_spring.service;
 
+import com.akydd.realworld_spring.exception.DuplicateFieldException;
 import com.akydd.realworld_spring.model.UpdateUser;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.repository.UserRepository;
@@ -25,6 +26,14 @@ public class UserServiceImpl implements UserService {
     }
 
     public User registerUser(User user) {
+        if (userRepository.findByUsername(user.getRealUsername()).isPresent()) {
+            throw new DuplicateFieldException("username");
+        }
+
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new DuplicateFieldException("email");
+        }
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
 

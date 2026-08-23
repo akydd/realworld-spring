@@ -4,7 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
-/** Mirrors {@code errors_profiles.hurl}: unknown profiles, and follow/unfollow auth/404 errors. */
+/**
+ * Mirrors {@code errors_profiles.hurl}: unknown profiles, and follow/unfollow auth/404 errors.
+ */
 @DisplayName("Profile errors (errors_profiles.hurl)")
 class ErrorsProfilesApiTest extends ApiTestSupport {
 

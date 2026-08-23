@@ -8,7 +8,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code profiles.hurl}: viewing a profile (with and without auth) and follow/unfollow. */
+/**
+ * Mirrors {@code profiles.hurl}: viewing a profile (with and without auth) and follow/unfollow.
+ */
 @DisplayName("Profiles API (profiles.hurl)")
 class ProfilesApiTest extends ApiTestSupport {
 

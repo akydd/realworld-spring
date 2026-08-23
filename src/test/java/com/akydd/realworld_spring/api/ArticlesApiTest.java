@@ -7,7 +7,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code articles.hurl}: create, list (author/tag filters), read, update, and delete. */
+/**
+ * Mirrors {@code articles.hurl}: create, list (author/tag filters), read, update, and delete.
+ */
 @DisplayName("Articles API (articles.hurl)")
 class ArticlesApiTest extends ApiTestSupport {
 

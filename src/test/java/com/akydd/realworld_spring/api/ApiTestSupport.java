@@ -6,12 +6,7 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -42,24 +37,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("integration")
 abstract class ApiTestSupport {
 
+    /**
+     * Matches the leading ISO-8601 date-time the API emits, e.g. {@code 2026-08-23T21:09:52...}.
+     */
+    protected static final String ISO_TS = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*";
     @Container
     @ServiceConnection
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(DockerImageName.parse("postgres:18"));
-
     private static final AtomicInteger COUNTER = new AtomicInteger();
-
+    /**
+     * Plain mapper for wire JSON — deliberately not the app's wrap/unwrap-configured ObjectMapper.
+     */
+    protected final JsonMapper json = JsonMapper.builder().build();
     @Autowired
     protected TestRestTemplate rest;
 
-    /** Plain mapper for wire JSON — deliberately not the app's wrap/unwrap-configured ObjectMapper. */
-    protected final JsonMapper json = JsonMapper.builder().build();
+    // --- HTTP (raw JSON in / raw JSON out) ---
 
-    /** A unique-per-call suffix, mirroring hurl's {@code {{uid}}}. */
+    /**
+     * A unique-per-call suffix, mirroring hurl's {@code {{uid}}}.
+     */
     protected String uid() {
         return System.nanoTime() + "x" + COUNTER.incrementAndGet();
     }
-
-    // --- HTTP (raw JSON in / raw JSON out) ---
 
     protected ResponseEntity<String> post(String path, String body, String token) {
         return call(HttpMethod.POST, path, body, token);
@@ -77,6 +77,8 @@ abstract class ApiTestSupport {
         return call(HttpMethod.DELETE, path, null, token);
     }
 
+    // --- JSON ---
+
     private ResponseEntity<String> call(HttpMethod method, String path, String body, String token) {
         HttpHeaders headers = new HttpHeaders();
         if (body != null) {
@@ -88,11 +90,11 @@ abstract class ApiTestSupport {
         return rest.exchange(path, method, new HttpEntity<>(body, headers), String.class);
     }
 
-    // --- JSON ---
-
     protected JsonNode body(ResponseEntity<String> response) {
         return json.readTree(response.getBody());
     }
+
+    // --- common setup ---
 
     protected List<String> strings(JsonNode arrayNode) {
         List<String> out = new ArrayList<>();
@@ -100,9 +102,9 @@ abstract class ApiTestSupport {
         return out;
     }
 
-    // --- common setup ---
-
-    /** Register a user (asserting 201) and return their token. */
+    /**
+     * Register a user (asserting 201) and return their token.
+     */
     protected String register(String username, String email, String password) {
         ResponseEntity<String> response = post("/api/users", """
                 {"user":{"username":"%s","email":"%s","password":"%s"}}"""
@@ -112,9 +114,6 @@ abstract class ApiTestSupport {
                 .isEqualTo(HttpStatus.CREATED);
         return body(response).path("user").path("token").asString();
     }
-
-    /** Matches the leading ISO-8601 date-time the API emits, e.g. {@code 2026-08-23T21:09:52...}. */
-    protected static final String ISO_TS = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*";
 
     /**
      * Assert a response's status (by numeric code, so it is immune to enum aliases like
@@ -127,16 +126,20 @@ abstract class ApiTestSupport {
         return response;
     }
 
-    /** Create an article (asserting 201) and return its slug. */
+    /**
+     * Create an article (asserting 201) and return its slug.
+     */
     protected String createArticle(String token, String title, String description, String articleBody) {
         ResponseEntity<String> response = expect(post("/api/articles", """
-                {"article":{"title":"%s","description":"%s","body":"%s"}}"""
-                .formatted(title, description, articleBody), token),
+                        {"article":{"title":"%s","description":"%s","body":"%s"}}"""
+                        .formatted(title, description, articleBody), token),
                 HttpStatus.CREATED, "setup: create article '" + title + "'");
         return body(response).path("article").path("slug").asString();
     }
 
-    /** Assert the RealWorld error shape {@code {"errors":{field:[message]}}}. */
+    /**
+     * Assert the RealWorld error shape {@code {"errors":{field:[message]}}}.
+     */
     protected void assertError(JsonNode responseBody, String field, String message, String step) {
         assertThat(responseBody.path("errors").path(field).path(0).asString())
                 .as("%s: errors.%s[0] should be '%s'", step, field, message)

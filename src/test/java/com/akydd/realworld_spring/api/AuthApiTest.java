@@ -7,7 +7,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code auth.hurl}: register, login, current user, and PUT /user (bio/image tri-state). */
+/**
+ * Mirrors {@code auth.hurl}: register, login, current user, and PUT /user (bio/image tri-state).
+ */
 @DisplayName("Auth & current-user API (auth.hurl)")
 class AuthApiTest extends ApiTestSupport {
 
@@ -20,8 +22,8 @@ class AuthApiTest extends ApiTestSupport {
 
         // --- register ---
         JsonNode reg = body(expect(post("/api/users",
-                """
-                {"user":{"username":"%s","email":"%s","password":"password123"}}""".formatted(username, email), null),
+                        """
+                                {"user":{"username":"%s","email":"%s","password":"password123"}}""".formatted(username, email), null),
                 HttpStatus.CREATED, "register")).path("user");
         assertThat(reg.path("username").asString()).as("register: username").isEqualTo(username);
         assertThat(reg.path("email").asString()).as("register: email").isEqualTo(email);
@@ -31,8 +33,8 @@ class AuthApiTest extends ApiTestSupport {
 
         // --- login ---
         JsonNode login = body(expect(post("/api/users/login",
-                """
-                {"user":{"email":"%s","password":"password123"}}""".formatted(email), null),
+                        """
+                                {"user":{"email":"%s","password":"password123"}}""".formatted(email), null),
                 HttpStatus.OK, "login")).path("user");
         assertThat(login.path("username").asString()).as("login: username").isEqualTo(username);
         assertThat(login.path("email").asString()).as("login: email").isEqualTo(email);
@@ -98,7 +100,9 @@ class AuthApiTest extends ApiTestSupport {
         assertThat(afterRename.path("bio").asString()).as("persisted rename: bio").isEqualTo("Updated bio");
     }
 
-    /** PUT /api/user with the given inner user fields (wrapped in {"user":...}); returns $.user. */
+    /**
+     * PUT /api/user with the given inner user fields (wrapped in {"user":...}); returns $.user.
+     */
     private JsonNode updateUser(String token, String userFieldsJson) {
         return body(expect(put("/api/user", "{\"user\":" + userFieldsJson + "}", token),
                 HttpStatus.OK, "PUT /api/user " + userFieldsJson)).path("user");

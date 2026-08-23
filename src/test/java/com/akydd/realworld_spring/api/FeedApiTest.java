@@ -7,7 +7,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code feed.hurl}: the feed reflects followed authors' articles, with paging. */
+/**
+ * Mirrors {@code feed.hurl}: the feed reflects followed authors' articles, with paging.
+ */
 @DisplayName("Feed API (feed.hurl)")
 class FeedApiTest extends ApiTestSupport {
 

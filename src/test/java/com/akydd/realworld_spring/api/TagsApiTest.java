@@ -8,7 +8,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code tags.hurl}: tags used by articles surface via GET /api/tags. */
+/**
+ * Mirrors {@code tags.hurl}: tags used by articles surface via GET /api/tags.
+ */
 @DisplayName("Tags API (tags.hurl)")
 class TagsApiTest extends ApiTestSupport {
 

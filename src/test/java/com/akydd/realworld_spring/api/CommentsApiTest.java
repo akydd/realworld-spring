@@ -3,12 +3,13 @@ package com.akydd.realworld_spring.api;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code comments.hurl}: create, list (auth + anon), delete, and selective deletion. */
+/**
+ * Mirrors {@code comments.hurl}: create, list (auth + anon), delete, and selective deletion.
+ */
 @DisplayName("Comments API (comments.hurl)")
 class CommentsApiTest extends ApiTestSupport {
 
@@ -69,8 +70,8 @@ class CommentsApiTest extends ApiTestSupport {
 
     private long createComment(String slug, String token, String text) {
         JsonNode c = body(expect(post("/api/articles/" + slug + "/comments",
-                """
-                {"comment":{"body":"%s"}}""".formatted(text), token),
+                        """
+                                {"comment":{"body":"%s"}}""".formatted(text), token),
                 HttpStatus.CREATED, "create comment '" + text + "'")).path("comment");
         return c.path("id").asLong();
     }

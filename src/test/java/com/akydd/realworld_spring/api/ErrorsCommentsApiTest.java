@@ -4,7 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
-/** Mirrors {@code errors_comments.hurl}: auth, blank-body validation, and unknown article/comment. */
+/**
+ * Mirrors {@code errors_comments.hurl}: auth, blank-body validation, and unknown article/comment.
+ */
 @DisplayName("Comment errors (errors_comments.hurl)")
 class ErrorsCommentsApiTest extends ApiTestSupport {
 

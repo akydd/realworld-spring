@@ -8,7 +8,9 @@ import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Mirrors {@code pagination.hurl}: limit/offset paging over an author's articles, newest first. */
+/**
+ * Mirrors {@code pagination.hurl}: limit/offset paging over an author's articles, newest first.
+ */
 @DisplayName("Pagination API (pagination.hurl)")
 class PaginationApiTest extends ApiTestSupport {
 
