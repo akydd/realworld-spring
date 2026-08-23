@@ -1,5 +1,6 @@
 package com.akydd.realworld_spring.service;
 
+import com.akydd.realworld_spring.exception.NotFoundException;
 import com.akydd.realworld_spring.model.Profile;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.repository.UserRepository;
@@ -17,7 +18,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Transactional
     public Profile follow(User user, String username) {
-        User userToFollow = userRepository.findByUsername(username).orElseThrow();
+        User userToFollow = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
         User me = userRepository.findById(user.getId()).orElseThrow();
 
         if (!me.getFollowing().contains(userToFollow)) {
@@ -29,7 +30,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Transactional
     public Profile unfollow(User user, String username) {
-        User userToUnfollow = userRepository.findByUsername(username).orElseThrow();
+        User userToUnfollow = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
         User me = userRepository.findById(user.getId()).orElseThrow();
 
         if (me.getFollowing().contains(userToUnfollow)) {
@@ -41,7 +42,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Transactional
     public Profile get(User user, String username) {
-        User profileUser = userRepository.findByUsername(username).orElseThrow();
+        User profileUser = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
         return toProfile(profileUser, user != null && userRepository.isFollowing(user.getId(), profileUser.getId()));
     }
 

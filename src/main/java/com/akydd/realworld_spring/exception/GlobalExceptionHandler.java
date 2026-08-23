@@ -50,10 +50,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ValidationErrorResponse> handleDuplicateFieldException(@NonNull DuplicateFieldException ex) {
         logger.info("Duplicate field: {}", ex.getMessage());
         Map<String, String[]> errors = new HashMap<>();
-        String fieldName = ex.getField();
-        errors.put(fieldName, new String[]{"has already been taken"});
+        errors.put(ex.getField(), new String[]{"has already been taken"});
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
+                .body(new ValidationErrorResponse(errors));
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ValidationErrorResponse> handleNotFoundException(NotFoundException ex) {
+        logger.info("Not found: {}", ex.getMessage());
+        Map<String, String[]> errors = new HashMap<>();
+        errors.put(ex.getField(), new String[]{"not found"});
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(new ValidationErrorResponse(errors));
     }
 
