@@ -8,7 +8,7 @@ import java.util.Map;
 
 @JsonRootName("errors")
 public class ValidationErrorResponse {
-    private final Map<String, String[]> errors =  new HashMap<>();
+    private final Map<String, String[]> errors = new HashMap<>();
 
     public ValidationErrorResponse(Map<String, String[]> errors) {
         this.errors.putAll(errors);

@@ -13,4 +13,5 @@ public record RegisterUserRequest(
         String email,
         @Size(min = 8, message = "get it right dude")
         String password
-) {}
+) {
+}

@@ -12,6 +12,7 @@ import java.util.Optional;
 
 public interface ArticleRepository extends JpaRepository<Article, Long> {
     Optional<Article> findBySlugAndAuthorId(String slug, Long authorId);
+
     Optional<Article> findBySlug(String slug);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)

@@ -44,7 +44,7 @@ public interface ArticleSummaryMapper {
                 .map(view -> toResponse(view))
                 .toList();
 
-        return new ArticlesResponse(summaries);
+        return new ArticlesResponse(summaries, summaries.isEmpty() ? 0 : summaries.size());
     }
 
     @Mapping(source = "author.realUsername", target = "username")

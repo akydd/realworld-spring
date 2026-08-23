@@ -9,7 +9,7 @@ import java.util.Objects;
  *     <li><b>present and null</b> - the field was sent as {@code null}, so clear the value;</li>
  *     <li><b>present with a value</b> - the field was sent with a value, so set it.</li>
  * </ul>
- *
+ * <p>
  * This replaces {@code org.openapitools.jackson.nullable.JsonNullable}, which only ships a Jackson 2
  * module and therefore does not register against the Jackson 3 mapper used by Spring Boot 4.
  * See {@link TristateDeserializer} for how the three states are produced during deserialization.
@@ -35,12 +35,16 @@ public final class Tristate<T> {
         return new Tristate<>(true, value);
     }
 
-    /** True when the field was present in the JSON (even if its value was null). */
+    /**
+     * True when the field was present in the JSON (even if its value was null).
+     */
     public boolean isPresent() {
         return present;
     }
 
-    /** The submitted value; null when the field was present-and-null (i.e. a clear). */
+    /**
+     * The submitted value; null when the field was present-and-null (i.e. a clear).
+     */
     public T get() {
         return value;
     }

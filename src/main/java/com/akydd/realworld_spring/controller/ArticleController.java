@@ -4,7 +4,10 @@ import com.akydd.realworld_spring.dto.*;
 import com.akydd.realworld_spring.mapper.ArticleMapper;
 import com.akydd.realworld_spring.mapper.ArticleSummaryMapper;
 import com.akydd.realworld_spring.mapper.CommentMapper;
-import com.akydd.realworld_spring.model.*;
+import com.akydd.realworld_spring.model.ArticleSummaryView;
+import com.akydd.realworld_spring.model.ArticleView;
+import com.akydd.realworld_spring.model.CommentView;
+import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.service.ArticleService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -84,8 +87,13 @@ public class ArticleController {
     }
 
     @GetMapping
-    public ResponseEntity<ArticlesResponse> getArticles(@AuthenticationPrincipal User user) {
-        List<ArticleSummaryView> articles = articleService.getAllArticles(user);
+    public ResponseEntity<ArticlesResponse> getArticles(@AuthenticationPrincipal User user,
+                                                        @RequestParam(required = false) String tag,
+                                                        @RequestParam(required = false) String author,
+                                                        @RequestParam(required = false) String favorited,
+                                                        @RequestParam(required = false) Integer limit,
+                                                        @RequestParam(required = false) Integer offset) {
+        List<ArticleSummaryView> articles = articleService.getAllArticles(user, tag, author, favorited, limit, offset);
         return ResponseEntity.ok(articleSummaryMapper.toResponse(articles));
     }
 }

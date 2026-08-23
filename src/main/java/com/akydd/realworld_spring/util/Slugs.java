@@ -1,7 +1,8 @@
 package com.akydd.realworld_spring.util;
 
 public final class Slugs {
-    private Slugs() {}
+    private Slugs() {
+    }
 
     public static String slugify(String str) {
         return str

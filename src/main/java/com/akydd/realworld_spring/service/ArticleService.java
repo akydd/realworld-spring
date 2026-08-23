@@ -24,5 +24,5 @@ public interface ArticleService {
 
     List<CommentView> getComments(User user, String slug);
 
-    List<ArticleSummaryView> getAllArticles(@Nullable User user);
+    List<ArticleSummaryView> getAllArticles(@Nullable User user, String tag, String author, String favorited, Integer limit, Integer offset);
 }

@@ -7,7 +7,8 @@ import java.util.List;
 
 @JsonRootName(value = "articles")
 public record ArticlesResponse(
-        @JsonValue List<ArticleSummaryResponse> articles
+        @JsonValue List<ArticleSummaryResponse> articles,
+        int articlesCount
 ) {
 }
 

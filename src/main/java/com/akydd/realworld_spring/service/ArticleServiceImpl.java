@@ -73,7 +73,7 @@ public class ArticleServiceImpl implements ArticleService {
             toUpdate.setBody(updateArticle.body());
         }
 
-        Article updatedArticle =  articleRepository.save(toUpdate);
+        Article updatedArticle = articleRepository.save(toUpdate);
         return new ArticleView(updatedArticle,
                 articleRepository.isFavorited(updatedArticle.getId(), user.getId()),
                 false
@@ -91,7 +91,7 @@ public class ArticleServiceImpl implements ArticleService {
             articleRepository.increaseFavoriteCount(article.getId());
         }
 
-        Article updatedArticle =  articleRepository.findById(article.getId()).orElseThrow();
+        Article updatedArticle = articleRepository.findById(article.getId()).orElseThrow();
         return new ArticleView(updatedArticle, true,
                 userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
     }
@@ -149,7 +149,7 @@ public class ArticleServiceImpl implements ArticleService {
         commentRepository.delete(comment);
     }
 
-    public List<CommentView>  getComments(User user, String slug) {
+    public List<CommentView> getComments(User user, String slug) {
         Article article = articleRepository.findBySlug(slug).orElseThrow();
         List<Comment> comments = commentRepository.findByArticleIdOrderByCreatedAtAsc(article.getId());
 
@@ -158,7 +158,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .toList();
     }
 
-    public List<ArticleSummaryView> getAllArticles(User user) {
+    public List<ArticleSummaryView> getAllArticles(User user, String tag, String author, String favorited, Integer limit, Integer offset) {
         List<ArticleSummary> articles = articleRepository.findAllBy();
 
         return articles.stream()

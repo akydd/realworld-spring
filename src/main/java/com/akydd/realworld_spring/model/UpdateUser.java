@@ -8,4 +8,5 @@ public record UpdateUser(
         String password,
         Tristate<String> bio,
         Tristate<String> image
-) {}
+) {
+}

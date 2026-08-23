@@ -15,6 +15,6 @@ public interface UserMapper {
 
     // This mapping is needed to get around the user having a username, but using the userid
     // in the userDetails.
-    @Mapping(source="realUsername", target="username")
+    @Mapping(source = "realUsername", target = "username")
     UserResponse toDTO(User user);
 }

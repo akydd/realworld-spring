@@ -3,7 +3,6 @@ package com.akydd.realworld_spring.mapper;
 import com.akydd.realworld_spring.dto.TagsResponse;
 import com.akydd.realworld_spring.model.Tag;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 import java.util.List;
 

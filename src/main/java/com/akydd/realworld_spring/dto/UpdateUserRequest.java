@@ -1,10 +1,10 @@
 package com.akydd.realworld_spring.dto;
 
+import com.akydd.realworld_spring.json.Tristate;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
-import com.akydd.realworld_spring.json.Tristate;
 
 @JsonRootName(value = "user")
 public record UpdateUserRequest(

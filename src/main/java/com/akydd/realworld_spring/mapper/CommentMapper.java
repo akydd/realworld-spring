@@ -6,7 +6,6 @@ import com.akydd.realworld_spring.dto.CreateCommentRequest;
 import com.akydd.realworld_spring.dto.ProfileResponse;
 import com.akydd.realworld_spring.model.Comment;
 import com.akydd.realworld_spring.model.CommentView;
-import com.akydd.realworld_spring.model.Profile;
 import com.akydd.realworld_spring.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -27,7 +26,7 @@ public interface CommentMapper {
 
     default CommentResponse toResponse(CommentView view) {
         return toResponse(view.comment(), view.following());
-    };
+    }
 
     @Mapping(source = "following", target = "following")
     @Mapping(source = "author.realUsername", target = "username")
