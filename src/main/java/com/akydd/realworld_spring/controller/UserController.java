@@ -32,7 +32,7 @@ public class UserController {
     @PutMapping
     public ResponseEntity<UserResponse> updateUser(@AuthenticationPrincipal User principle, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
         final long userId = principle.getId();
-        User user = userService.updateUser(userId, userUpdateMapper.toEntity(updateUserRequest));
+        User user = userService.updateUser(principle, userUpdateMapper.toEntity(updateUserRequest));
         return ResponseEntity.ok(userMapper.toDTO(user));
     }
 }

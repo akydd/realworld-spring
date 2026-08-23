@@ -4,7 +4,6 @@ import com.akydd.realworld_spring.dto.*;
 import com.akydd.realworld_spring.mapper.ArticleMapper;
 import com.akydd.realworld_spring.mapper.ArticleSummaryMapper;
 import com.akydd.realworld_spring.mapper.CommentMapper;
-import com.akydd.realworld_spring.model.ArticleSummaryView;
 import com.akydd.realworld_spring.model.ArticleView;
 import com.akydd.realworld_spring.model.CommentView;
 import com.akydd.realworld_spring.model.User;
@@ -13,10 +12,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.SerializationFeature;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import java.util.List;
 
@@ -76,7 +75,7 @@ public class ArticleController {
     @PostMapping("{slug}/comments")
     public ResponseEntity<CommentResponse> addComment(@AuthenticationPrincipal User user, @PathVariable String slug, @Valid @RequestBody CreateCommentRequest comment) {
         CommentView newComment = articleService.addComment(user, slug, commentMapper.toEntity(comment));
-        return ResponseEntity.ok(commentMapper.toResponse(newComment));
+        return ResponseEntity.status(HttpStatus.CREATED).body(commentMapper.toResponse(newComment));
     }
 
     @DeleteMapping("{slug}/comments/{id}")

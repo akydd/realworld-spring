@@ -8,5 +8,5 @@ public interface UserService {
 
     User loginUser(String email, String password);
 
-    User updateUser(long userId, UpdateUser updateUser);
+    User updateUser(User user, UpdateUser updateUser);
 }

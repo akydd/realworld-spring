@@ -3,13 +3,10 @@ package com.akydd.realworld_spring.service;
 import com.akydd.realworld_spring.dto.ArticleSummaryResponse;
 import com.akydd.realworld_spring.dto.ArticlesResponse;
 import com.akydd.realworld_spring.dto.ProfileResponse;
+import com.akydd.realworld_spring.exception.ForbiddenException;
 import com.akydd.realworld_spring.exception.NotFoundException;
 import com.akydd.realworld_spring.model.*;
-import com.akydd.realworld_spring.repository.ArticleRepository;
-import com.akydd.realworld_spring.repository.ArticleTagRow;
-import com.akydd.realworld_spring.repository.CommentRepository;
-import com.akydd.realworld_spring.repository.TagRepository;
-import com.akydd.realworld_spring.repository.UserRepository;
+import com.akydd.realworld_spring.repository.*;
 import com.akydd.realworld_spring.util.OffsetPageable;
 import com.akydd.realworld_spring.util.Slugs;
 import jakarta.annotation.Nullable;
@@ -17,12 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,8 +58,10 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Transactional
     public ArticleView update(User user, String slug, UpdateArticle updateArticle) {
-        // This makes sure that 1: the article exists, and 2: the article is authored by the caller.
-        Article toUpdate = articleRepository.findBySlugAndAuthorId(slug, user.getId()).orElseThrow();
+        Article toUpdate = articleRepository.findBySlug(slug).orElseThrow();
+        if (!toUpdate.getAuthor().getId().equals(user.getId())) {
+            throw new ForbiddenException("article");
+        }
 
         // When the title changes, the slug must also change.
         if (updateArticle.title() != null && !updateArticle.title().isEmpty()) {
@@ -137,7 +131,10 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     public void delete(User user, String slug) {
-        Article toDelete = articleRepository.findBySlugAndAuthorId(slug, user.getId()).orElseThrow();
+        Article toDelete = articleRepository.findBySlug(slug).orElseThrow();
+        if (!toDelete.getAuthor().getId().equals(user.getId())) {
+            throw new ForbiddenException("article");
+        }
         articleRepository.delete(toDelete);
     }
 
@@ -151,7 +148,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Transactional
     public CommentView addComment(User user, String slug, Comment comment) {
-        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        Article article = articleRepository.findBySlug(slug).orElseThrow(() -> new NotFoundException("article"));
         comment.setArticle(article);
         comment.setAuthor(user);
 
@@ -160,22 +157,22 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     public void deleteComment(User user, String slug, Long commentId) {
-        Comment comment = commentRepository.findById(commentId).orElseThrow();
-        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        Article article = articleRepository.findBySlug(slug).orElseThrow(() -> new NotFoundException("article"));
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new NotFoundException("comment"));
 
         if (!comment.getArticle().getId().equals(article.getId())) {
             throw new RuntimeException("nope");
         }
 
         if (!comment.getAuthor().getId().equals(user.getId())) {
-            throw new RuntimeException("nope");
+            throw new ForbiddenException("comment");
         }
 
         commentRepository.delete(comment);
     }
 
     public List<CommentView> getComments(User user, String slug) {
-        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        Article article = articleRepository.findBySlug(slug).orElseThrow(() -> new NotFoundException("article"));
         List<Comment> comments = commentRepository.findByArticleIdOrderByCreatedAtAsc(article.getId());
 
         return comments.stream()
@@ -200,14 +197,16 @@ public class ArticleServiceImpl implements ArticleService {
         return assemble(rows, total);
     }
 
-    /** Stitch the batched tag names onto the projected rows and build the response DTO. */
+    /**
+     * Stitch the batched tag names onto the projected rows and build the response DTO.
+     */
     private ArticlesResponse assemble(List<ArticleSummaryRow> rows, long total) {
         List<Long> ids = rows.stream().map(ArticleSummaryRow::id).toList();
         Map<Long, List<String>> tagsById = ids.isEmpty()
                 ? Map.of()
                 : articleRepository.tagRows(ids).stream()
-                        .collect(Collectors.groupingBy(ArticleTagRow::getArticleId,
-                                Collectors.mapping(ArticleTagRow::getName, Collectors.toList())));
+                .collect(Collectors.groupingBy(ArticleTagRow::getArticleId,
+                        Collectors.mapping(ArticleTagRow::getName, Collectors.toList())));
 
         List<ArticleSummaryResponse> items = rows.stream()
                 .map(r -> new ArticleSummaryResponse(

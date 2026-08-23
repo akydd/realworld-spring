@@ -66,6 +66,16 @@ public class GlobalExceptionHandler {
                 .body(new ValidationErrorResponse(errors));
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ValidationErrorResponse> handleForbiddenException(ForbiddenException ex) {
+        logger.info("Forbidden: {}", ex.getMessage());
+        Map<String, String[]> errors = new HashMap<>();
+        errors.put(ex.getEntity(), new String[]{"forbidden"});
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ValidationErrorResponse(errors));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ValidationErrorResponse> handleException(@NonNull Exception ex, HttpServletRequest request) {
         // Log the error

@@ -54,8 +54,8 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
-    public User updateUser(long userId, UpdateUser updateUser) {
-        User userToUpdate = userRepository.findById(userId).orElseThrow();
+    public User updateUser(User user, UpdateUser updateUser) {
+        User userToUpdate = userRepository.findById(user.getId()).orElseThrow();
 
         // We have to check each field
         if (updateUser.email() != null) {
@@ -75,6 +75,7 @@ public class UserServiceImpl implements UserService {
             userToUpdate.setImage(updateUser.image().get());
         }
 
+        userToUpdate.setToken(user.getToken());
         return userRepository.save(userToUpdate);
     }
 }
