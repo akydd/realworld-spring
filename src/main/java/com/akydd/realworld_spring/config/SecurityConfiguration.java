@@ -41,6 +41,9 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/articles/{slug}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/articles/{slug}/comments").permitAll()
 
+                        // Health check
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+
                         // All others require authentication
                         .anyRequest().authenticated()
                 )
