@@ -15,9 +15,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfiguration {
 
     final private JwtAuthenticationFilter jwtAuthenticationFilter;
+    final private TokenAuthenticationEntryPoint tokenAuthenticationEntryPoint;
 
-    public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter, TokenAuthenticationEntryPoint tokenAuthenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.tokenAuthenticationEntryPoint = tokenAuthenticationEntryPoint;
     }
 
     @Bean
@@ -51,6 +53,7 @@ public class SecurityConfiguration {
                 // We aren't using the UsernamePasswordAuthenticationFilter. This just amkes sure that the
                 // jwtAuthenticationFilter is fired before all the other ones.
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(tokenAuthenticationEntryPoint))
                 .build();
     }
 }

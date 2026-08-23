@@ -21,6 +21,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleException(@NonNull MethodArgumentNotValidException ex) {
+        logger.info("Validation error: {}", ex.getMessage());
+
         Map<String, String[]> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
@@ -35,6 +37,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ValidationErrorResponse> handleException(@NonNull BadCredentialsException ex) {
+        logger.info("Bad credentials: {}", ex.getMessage());
         Map<String, String[]> errors = new HashMap<>();
         errors.put("credentials", new String[]{"invalid"});
 
@@ -45,6 +48,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateFieldException.class)
     public ResponseEntity<ValidationErrorResponse> handleDuplicateFieldException(@NonNull DuplicateFieldException ex) {
+        logger.info("Duplicate field: {}", ex.getMessage());
         Map<String, String[]> errors = new HashMap<>();
         String fieldName = ex.getField();
         errors.put(fieldName, new String[]{"has already been taken"});
