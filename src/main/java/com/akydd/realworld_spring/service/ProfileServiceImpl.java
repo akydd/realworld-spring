@@ -24,7 +24,7 @@ public class ProfileServiceImpl implements ProfileService {
             me.addFollowing(userToFollow);
         }
 
-        return toProfile(me, true);
+        return toProfile(userToFollow, true);
     }
 
     @Transactional
@@ -36,13 +36,13 @@ public class ProfileServiceImpl implements ProfileService {
             me.removeFollowing(userToUnfollow);
         }
 
-        return toProfile(me, false);
+        return toProfile(userToUnfollow, false);
     }
 
     @Transactional
     public Profile get(User user, String username) {
         User profileUser = userRepository.findByUsername(username).orElseThrow();
-        return toProfile(profileUser, userRepository.isFollowing(user.getId(), profileUser.getId()));
+        return toProfile(profileUser, user != null && userRepository.isFollowing(user.getId(), profileUser.getId()));
     }
 
     private Profile toProfile(User user, Boolean following) {
