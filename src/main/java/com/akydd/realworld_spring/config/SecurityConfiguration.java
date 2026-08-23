@@ -40,6 +40,7 @@ public class SecurityConfiguration {
 
                         // Optional authentication
                         .requestMatchers(HttpMethod.GET, "/api/profiles/{username}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/articles/feed").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/articles").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/articles/{slug}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/articles/{slug}/comments").permitAll()

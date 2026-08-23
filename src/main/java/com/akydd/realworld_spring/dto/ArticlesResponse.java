@@ -1,13 +1,11 @@
 package com.akydd.realworld_spring.dto;
 
-import com.fasterxml.jackson.annotation.JsonRootName;
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import java.util.List;
 
-@JsonRootName(value = "articles")
+// Plain record: serialized by the controller with WRAP_ROOT_VALUE disabled so it renders as the
+// two-key {"articles":[...],"articlesCount":N} the spec requires.
 public record ArticlesResponse(
-        @JsonValue List<ArticleSummaryResponse> articles,
+        List<ArticleSummaryResponse> articles,
         int articlesCount
 ) {
 }

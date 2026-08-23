@@ -1,5 +1,6 @@
 package com.akydd.realworld_spring.service;
 
+import com.akydd.realworld_spring.dto.ArticlesResponse;
 import com.akydd.realworld_spring.model.*;
 import jakarta.annotation.Nullable;
 
@@ -24,5 +25,7 @@ public interface ArticleService {
 
     List<CommentView> getComments(User user, String slug);
 
-    List<ArticleSummaryView> getAllArticles(@Nullable User user, String tag, String author, String favorited, Integer limit, Integer offset);
+    ArticlesResponse getAllArticles(@Nullable User user, String tag, String author, String favorited, Integer limit, Integer offset);
+
+    ArticlesResponse getFeed(User user, Integer limit, Integer offset);
 }

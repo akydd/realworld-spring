@@ -19,7 +19,8 @@ public class TristateDeserializer extends ValueDeserializer<Tristate> {
 
     @Override
     public Tristate deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
-        return Tristate.of(p.getValueAsString());
+        // Read the natural JSON value (string, array -> List, etc.) so Tristate works for any T.
+        return Tristate.of(ctxt.readValue(p, Object.class));
     }
 
     @Override
