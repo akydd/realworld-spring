@@ -39,3 +39,6 @@ out/
 ### Clojure LSP / clj-kondo ###
 .clj-kondo/
 .lsp/
+
+### Local e2e ###
+app.log
