@@ -19,32 +19,60 @@ A Spring Boot implementation of the [RealWorld](https://realworld-docs.netlify.a
 
 ## Running locally
 
-1. Start a PostgreSQL instance matching `src/main/resources/application.properties`:
+Prerequisites: a JDK for **Java 26** and **Docker** (used for the database).
 
-   ```
-   host: localhost:8095
-   database: app
-   user: admin
-   password: password
-   ```
+### Run the app
 
-2. Run the app (Flyway applies migrations from `src/main/resources/db/migration` on startup):
+`spring-boot-docker-compose` is on the dev classpath, so `bootRun` automatically starts the
+PostgreSQL container from `compose.yaml` (Postgres 18 on `localhost:8095`) and wires the datasource
+to it — no manual database setup. Flyway then applies the migrations in
+`src/main/resources/db/migration` on startup.
 
-   ```bash
-   ./gradlew bootRun
-   ```
+```bash
+./gradlew bootRun
+```
 
-   The API is served at `http://localhost:8080`.
+- API: `http://localhost:8080`
+- Health: `http://localhost:8080/actuator/health` (with `/actuator/health/readiness` and `/liveness`)
 
-3. Run the unit tests:
+Docker must be running. To run against your own PostgreSQL instead (no Docker), disable the module
+with `spring.docker.compose.enabled=false`; the app then uses the datasource defaults in
+`application.properties` (`localhost:8095`, `admin`/`password`), overridable via the
+`SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` environment variables.
 
-   ```bash
-   ./gradlew test
-   ```
+### Unit tests
 
-The RealWorld spec's end-to-end tests (Hurl) live outside this repo under
-`../realworld/specs/api/hurl` and can be run with the `run-hurl-tests.sh` script there against a
-running instance.
+```bash
+./gradlew test
+```
+
+### End-to-end (Hurl) tests
+
+The RealWorld spec's HTTP tests (Hurl) live in the upstream repo under `specs/api/hurl`. Run them
+against the app backed by a **disposable** test database (`compose.test.yaml`, Postgres 18 on
+`localhost:8096`, no volume — so migrations always apply fresh):
+
+```bash
+# 1. start the throwaway test DB (waits until it is healthy)
+docker compose -f compose.test.yaml up --wait
+
+# 2. build and run the app against it. Use the jar, not bootRun: the jar excludes the
+#    developmentOnly docker-compose module, so it honours these env vars instead of
+#    auto-starting compose.yaml.
+./gradlew bootJar
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:8096/test-app \
+SPRING_DATASOURCE_USERNAME=admin \
+SPRING_DATASOURCE_PASSWORD=password \
+java -jar build/libs/*-SNAPSHOT.jar &
+
+# 3. once /actuator/health/readiness is UP, run the suite against the app
+HOST=http://localhost:8080 ../realworld/specs/api/hurl/run-hurl-tests.sh
+
+# 4. tear down the test DB
+docker compose -f compose.test.yaml down -v
+```
+
+This is the same sequence CI runs, with `compose.test.yaml` standing in for the CI Postgres service.
 
 ## Authentication notes
 
