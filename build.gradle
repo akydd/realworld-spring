@@ -20,8 +20,15 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    // RestTemplateBuilder lives in its own module in Boot 4; TestRestTemplate needs it at runtime
+    testImplementation 'org.springframework.boot:spring-boot-restclient'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Testcontainers 2.x (in-JVM end-to-end tests) — 2.0 renamed the modules to testcontainers-*
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
     // db stuff
