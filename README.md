@@ -3,6 +3,8 @@
 A Spring Boot implementation of the [RealWorld](https://realworld-docs.netlify.app/specifications/backend/endpoints/)
 ("Conduit") backend API.
 
+[![API tests](https://github.com/akydd/realworld-spring/actions/workflows/api-tests.yml/badge.svg)](https://github.com/akydd/realworld-spring/actions/workflows/api-tests.yml)
+
 ## Tech stack
 
 | Concern        | Choice                                    |
@@ -45,6 +47,30 @@ with `spring.docker.compose.enabled=false`; the app then uses the datasource def
 ```bash
 ./gradlew test
 ```
+
+### API tests (JUnit ports of the Hurl specs)
+
+`src/test/java/com/akydd/realworld_spring/api` holds JUnit reimplementations of the RealWorld Hurl
+specs — the same requests and response assertions, but as Java integration tests. Each `*ApiTest`
+class mirrors one `.hurl` file (e.g. `ArticlesApiTest` ↔ `articles.hurl`, `FeedApiTest` ↔
+`feed.hurl`). They boot the full app on a random port (`@SpringBootTest(webEnvironment =
+RANDOM_PORT)`) and drive it over HTTP with `TestRestTemplate`, sending and reading **raw JSON** so
+the app's wrap/unwrap-root-value settings are exercised end to end.
+
+The database is a **Testcontainers** PostgreSQL 18 container, started once and shared across all
+suites (`ApiTestSupport`) and wired in with `@ServiceConnection` — so, unlike the Hurl flow below,
+there is no app or database to start by hand. **Docker must be running.**
+
+```bash
+# every API test
+./gradlew test --tests 'com.akydd.realworld_spring.api.*'
+
+# a single suite
+./gradlew test --tests 'com.akydd.realworld_spring.api.ArticlesApiTest'
+```
+
+(`./gradlew test` runs these too, alongside the unit tests.) They also run in CI on every push to
+`main` — see `.github/workflows/api-tests.yml`.
 
 ### End-to-end (Hurl) tests
 
