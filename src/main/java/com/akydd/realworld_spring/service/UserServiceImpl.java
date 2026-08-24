@@ -58,7 +58,8 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public User updateUser(User user, UpdateUser updateUser) {
-        User userToUpdate = userRepository.findById(user.getId()).orElseThrow();
+        User userToUpdate = userRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalStateException("authenticated user " + user.getId() + " not found"));
 
         // We have to check each field
         if (updateUser.email() != null) {

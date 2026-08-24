@@ -151,7 +151,8 @@ public class ArticleServiceImpl implements ArticleService {
             articleRepository.increaseFavoriteCount(article.getId());
         }
 
-        Article updatedArticle = articleRepository.findById(article.getId()).orElseThrow();
+        Article updatedArticle = articleRepository.findById(article.getId())
+                .orElseThrow(() -> new IllegalStateException("article " + article.getId() + " disappeared mid-transaction"));
         return new ArticleView(updatedArticle, true,
                 userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
     }
@@ -168,7 +169,8 @@ public class ArticleServiceImpl implements ArticleService {
             articleRepository.decreaseFavoriteCount(article.getId());
         }
 
-        Article updatedArticle = articleRepository.findById(article.getId()).orElseThrow();
+        Article updatedArticle = articleRepository.findById(article.getId())
+                .orElseThrow(() -> new IllegalStateException("article " + article.getId() + " disappeared mid-transaction"));
         return new ArticleView(updatedArticle, false,
                 userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
     }

@@ -19,7 +19,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional
     public Profile follow(User user, String username) {
         User userToFollow = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
-        User me = userRepository.findById(user.getId()).orElseThrow();
+        User me = userRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalStateException("authenticated user " + user.getId() + " not found"));
 
         if (!me.getFollowing().contains(userToFollow)) {
             me.addFollowing(userToFollow);
@@ -31,7 +32,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional
     public Profile unfollow(User user, String username) {
         User userToUnfollow = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
-        User me = userRepository.findById(user.getId()).orElseThrow();
+        User me = userRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalStateException("authenticated user " + user.getId() + " not found"));
 
         if (me.getFollowing().contains(userToUnfollow)) {
             me.removeFollowing(userToUnfollow);
