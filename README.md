@@ -161,12 +161,13 @@ leave that one article a hair stale until the next run.
 > At this project's data volume the counter is arguably premature; deriving the count on read would
 > be simpler and drift-proof. It is kept deliberately, to exercise the counter-cache pattern.
 
-## Follows: a join entity, not a `@ManyToMany`
+## Follows and favorites: join entities, not `@ManyToMany`
 
-The follow relationship is modelled as a dedicated **join entity** — `Follows`, with a composite
-`@EmbeddedId` over `(follower_id, following_id)` and two `@MapsId` associations — rather than a JPA
-`@ManyToMany Set<User>` collection on `User`. This is a deliberate choice for **lookup cost at
-scale**.
+The membership-style relationships — who follows whom (`follows`) and who favorited what
+(`article_favorites`) — are each modelled as a dedicated **join entity** (`Follows`,
+`ArticleFavorites`), with a composite `@EmbeddedId` and two `@MapsId` associations, rather than
+`@ManyToMany` collections on `User`. This is a deliberate choice for **lookup cost at scale**;
+`follows` is the worked example below, but favorites is modelled identically.
 
 With a `@ManyToMany` collection, following someone reads as:
 
@@ -188,9 +189,11 @@ hydrated:
   against `Follows` (`UserRepository.isFollowing` and the `ArticleRepository` list/feed subqueries)
 
 The composite primary key `(follower_id, following_id)` is the source of truth and makes the writes
-naturally idempotent — a duplicate follow can't create a second row. `User` holds no follows
-collection at all; `Follows` is the single representation, used for both reads and writes. (The same
-reasoning applies to article favorites via `article_favorites`.)
+naturally idempotent — a duplicate follow can't create a second row. Favorites work the same way:
+`favorite`/`unfavorite` do `existsById` + `save`/`deleteById` on `ArticleFavorites` (adjusting the
+denormalized [favorites count](#favorites-count-a-denormalized-counter-cache) inside the same guard),
+and the `favorited` flag is an indexed query. `User` holds **neither** collection — `Follows` and
+`ArticleFavorites` are the single representation of their tables, used for both reads and writes.
 
 ## Development issues encountered
 

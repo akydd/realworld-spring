@@ -5,7 +5,9 @@ import org.jspecify.annotations.NullMarked;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name = "users")
@@ -31,14 +33,6 @@ public class User implements UserDetails {
 
     @Transient
     private String token;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "article_favorites",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "article_id")
-    )
-    private Set<Article> favorites = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -107,21 +101,5 @@ public class User implements UserDetails {
     // Needed due to the above override for the UserDetails interface.
     public String getRealUsername() {
         return username;
-    }
-    
-    public Set<Article> getFavorites() {
-        return favorites;
-    }
-
-    public void setFavorites(Set<Article> favorites) {
-        this.favorites = favorites;
-    }
-
-    public void addFavorite(Article article) {
-        this.favorites.add(article);
-    }
-
-    public void removeFavorite(Article article) {
-        this.favorites.remove(article);
     }
 }

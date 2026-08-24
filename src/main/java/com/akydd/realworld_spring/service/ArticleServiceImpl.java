@@ -28,17 +28,19 @@ public class ArticleServiceImpl implements ArticleService {
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final ArticleFavoritesRepository articleFavoritesRepository;
     // Self-reference so createOnce() is called THROUGH the Spring proxy: each retry attempt must run
     // in its own transaction. A unique-constraint violation marks the current transaction
     // rollback-only and poisons the persistence context, so we cannot catch it and re-save inside the
     // same @Transactional method. @Lazy breaks the constructor self-dependency cycle.
     private final ArticleServiceImpl self;
 
-    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository, CommentRepository commentRepository, @Lazy ArticleServiceImpl self) {
+    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository, CommentRepository commentRepository, ArticleFavoritesRepository articleFavoritesRepository, @Lazy ArticleServiceImpl self) {
         this.articleRepository = articleRepository;
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.articleFavoritesRepository = articleFavoritesRepository;
         this.self = self;
     }
 
@@ -145,9 +147,9 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new NotFoundException("article"));
 
-        if (!me.getFavorites().contains(article)) {
-            me.addFavorite(article);
-            userRepository.save(me);
+        ArticleFavoritesId id = new ArticleFavoritesId(me.getId(), article.getId());
+        if (!articleFavoritesRepository.existsById(id)) {
+            articleFavoritesRepository.save(new ArticleFavorites(me, article));
             articleRepository.increaseFavoriteCount(article.getId());
         }
 
@@ -163,9 +165,9 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new NotFoundException("article"));
 
-        if (me.getFavorites().contains(article)) {
-            me.removeFavorite(article);
-            userRepository.save(me);
+        ArticleFavoritesId id = new ArticleFavoritesId(me.getId(), article.getId());
+        if (articleFavoritesRepository.existsById(id)) {
+            articleFavoritesRepository.deleteById(id);
             articleRepository.decreaseFavoriteCount(article.getId());
         }
 
