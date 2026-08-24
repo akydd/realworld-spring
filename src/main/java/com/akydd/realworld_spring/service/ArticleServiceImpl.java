@@ -10,6 +10,9 @@ import com.akydd.realworld_spring.repository.*;
 import com.akydd.realworld_spring.util.OffsetPageable;
 import com.akydd.realworld_spring.util.Slugs;
 import jakarta.annotation.Nullable;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,22 +27,51 @@ public class ArticleServiceImpl implements ArticleService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
 
-    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository, CommentRepository commentRepository) {
+    // Retry ceiling for slug collisions (a collision at all is already rare).
+    private static final int MAX_SLUG_ATTEMPTS = 20;
+
+    // Self-reference so createOnce() is called THROUGH the Spring proxy: each retry attempt must run
+    // in its own transaction. A unique-constraint violation marks the current transaction
+    // rollback-only and poisons the persistence context, so we cannot catch it and re-save inside the
+    // same @Transactional method. @Lazy breaks the constructor self-dependency cycle.
+    private final ArticleServiceImpl self;
+
+    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository, CommentRepository commentRepository, @Lazy ArticleServiceImpl self) {
         this.articleRepository = articleRepository;
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.self = self;
+    }
+
+    // NOT @Transactional: this owns the retry loop, so each attempt below gets a fresh transaction.
+    // The articles.slug UNIQUE constraint is the source of truth; on a losing race we bump the slug
+    // suffix and try again rather than pre-checking (which would race anyway).
+    public ArticleView create(User author, Article article, List<String> tagNames) {
+        String baseSlug = article.getSlug();
+        for (int attempt = 0; ; attempt++) {
+            article.setSlug(attempt == 0 ? baseSlug : baseSlug + "-" + attempt);
+            try {
+                return self.createOnce(author, article, tagNames);
+            } catch (DataIntegrityViolationException e) {
+                if (attempt >= MAX_SLUG_ATTEMPTS || !isSlugConflict(e)) {
+                    throw e;
+                }
+                // slug already taken: bump the suffix and retry in a new transaction
+            }
+        }
     }
 
     @Transactional
-    public ArticleView create(User author, Article article, List<String> tagNames) {
+    public ArticleView createOnce(User author, Article article, List<String> tagNames) {
         article.setAuthor(author);
 
         // Tags must be handled separately from the rest of the Article model.
         // This handles saving new tags, not creating duplicate tags,
         // and creating an object that Hibernate can use to link the article
         // to those tags.
-        // Preserve request order (LinkedHashSet) and tolerate an absent tagList (null).
+        // Preserve request order (LinkedHashSet) and tolerate an absent tagList (null). Rebuilt on
+        // every attempt so a rolled-back attempt never reuses stale (detached) tag entities.
         Set<Tag> tags = (tagNames == null ? List.<String>of() : tagNames).stream()
                 .map(String::trim)
                 .filter(n -> !n.isBlank())
@@ -51,14 +83,23 @@ public class ArticleServiceImpl implements ArticleService {
         // Link tags to the Article.
         article.setTags(tags);
 
-        // Save the article with the tag links.
+        // Save the article with the tag links. The id is IDENTITY-generated, so a slug collision
+        // fails this INSERT and leaves the entity transient (id null) — safe to retry with a new slug.
         Article newArticle = articleRepository.save(article);
         return new ArticleView(newArticle, false, false);
     }
 
+    /** True when the failure is the articles.slug UNIQUE violation (Postgres names it articles_slug_key). */
+    private static boolean isSlugConflict(DataIntegrityViolationException e) {
+        return e.getCause() instanceof ConstraintViolationException cve
+                && cve.getConstraintName() != null
+                && cve.getConstraintName().toLowerCase().contains("slug");
+    }
+
     @Transactional
     public ArticleView update(User user, String slug, UpdateArticle updateArticle) {
-        Article toUpdate = articleRepository.findBySlug(slug).orElseThrow();
+        Article toUpdate = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new NotFoundException("article"));
         if (!toUpdate.getAuthor().getId().equals(user.getId())) {
             throw new ForbiddenException("article");
         }
@@ -101,7 +142,8 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional
     public ArticleView favorite(User user, String slug) {
         User me = userRepository.getReferenceById(user.getId());
-        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        Article article = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new NotFoundException("article"));
 
         if (!me.getFavorites().contains(article)) {
             me.addFavorite(article);
@@ -117,7 +159,8 @@ public class ArticleServiceImpl implements ArticleService {
     @Transactional
     public ArticleView unfavorite(User user, String slug) {
         User me = userRepository.getReferenceById(user.getId());
-        Article article = articleRepository.findBySlug(slug).orElseThrow();
+        Article article = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new NotFoundException("article"));
 
         if (me.getFavorites().contains(article)) {
             me.removeFavorite(article);
@@ -131,7 +174,8 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     public void delete(User user, String slug) {
-        Article toDelete = articleRepository.findBySlug(slug).orElseThrow();
+        Article toDelete = articleRepository.findBySlug(slug)
+                .orElseThrow(() -> new NotFoundException("article"));
         if (!toDelete.getAuthor().getId().equals(user.getId())) {
             throw new ForbiddenException("article");
         }
