@@ -74,31 +74,37 @@ there is no app or database to start by hand. **Docker must be running.**
 
 ### End-to-end (Hurl) tests
 
-The RealWorld spec's HTTP tests (Hurl) live in the upstream repo under `specs/api/hurl`. Run them
-against the app backed by a **disposable** test database (`compose.test.yaml`, Postgres 18 on
-`localhost:8096`, no volume — so migrations always apply fresh):
+The RealWorld spec's own HTTP tests (Hurl) live in the upstream repo under `specs/api/hurl` and run
+against the **running** app over the network — unlike the API tests above, which boot the app
+in-process. The `make e2e` target wraps the whole dance:
 
 ```bash
-# 1. start the throwaway test DB (waits until it is healthy)
-docker compose -f compose.test.yaml up --wait
-
-# 2. build and run the app against it. Use the jar, not bootRun: the jar excludes the
-#    developmentOnly docker-compose module, so it honours these env vars instead of
-#    auto-starting compose.yaml.
-./gradlew bootJar
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:8096/test-app \
-SPRING_DATASOURCE_USERNAME=admin \
-SPRING_DATASOURCE_PASSWORD=password \
-java -jar build/libs/*-SNAPSHOT.jar &
-
-# 3. once /actuator/health/readiness is UP, run the suite against the app
-HOST=http://localhost:8080 ../realworld/specs/api/hurl/run-hurl-tests.sh
-
-# 4. tear down the test DB
-docker compose -f compose.test.yaml down -v
+make e2e
 ```
 
-This is the same sequence CI runs, with `compose.test.yaml` standing in for the CI Postgres service.
+Under the hood (`scripts/e2e.sh`) it:
+
+1. builds the jar (`./gradlew bootJar`) first, so a broken build fails fast before touching Docker;
+2. starts a **disposable** test database (`compose.test.yaml`, Postgres 18 on `localhost:8096`, no
+   volume — so migrations always apply fresh) and waits until it is healthy;
+3. runs the jar against it — the jar excludes the `developmentOnly` docker-compose module, so it
+   honours the `SPRING_DATASOURCE_*` env vars instead of auto-starting `compose.yaml`;
+4. polls `/actuator/health/readiness` until the app reports `UP`;
+5. runs the Hurl suite (`run-hurl-tests.sh`) against it;
+6. **always tears down on exit** (even on failure or Ctrl-C) — kills the app and
+   `docker compose down -v`.
+
+Prerequisites: Docker running, and [Hurl](https://hurl.dev) installed (used by `run-hurl-tests.sh`).
+
+`HOST` and `HURL_DIR` are overridable; the defaults are shown below. `HURL_DIR` must point at your
+local checkout of the RealWorld spec repo:
+
+```bash
+make e2e HOST=http://localhost:8080 HURL_DIR=../realworld/specs/api/hurl
+```
+
+Two helper targets manage the throwaway DB on its own — `make test-db-up` and `make test-db-down` —
+handy when iterating on Hurl files against an app you are already running.
 
 ## Authentication notes
 
