@@ -175,6 +175,11 @@ public class ArticleServiceImpl implements ArticleService {
                 userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
     }
 
+    @Transactional
+    public int reconcileFavoritesCounts() {
+        return articleRepository.reconcileFavoritesCounts();
+    }
+
     public void delete(User user, String slug) {
         Article toDelete = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new NotFoundException("article"));

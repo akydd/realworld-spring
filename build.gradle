@@ -56,6 +56,10 @@ dependencies {
 
     // Readiness check
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // CLI maintenance commands. Not managed by the Boot BOM; 3.4.0 is built against Framework 6 but
+    // runs on this project's Framework 7 (verified: `reconcile-counts` executes and exits cleanly).
+    implementation 'org.springframework.shell:spring-shell-starter:3.4.0'
 }
 
 tasks.named('test') {

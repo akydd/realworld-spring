@@ -28,4 +28,10 @@ public interface ArticleService {
     ArticlesResponse getAllArticles(@Nullable User user, String tag, String author, String favorited, Integer limit, Integer offset);
 
     ArticlesResponse getFeed(User user, Integer limit, Integer offset);
+
+    /**
+     * Recomputes every article's cached favoritesCount from the favorites source of truth,
+     * correcting any drift. Returns the number of articles updated.
+     */
+    int reconcileFavoritesCounts();
 }

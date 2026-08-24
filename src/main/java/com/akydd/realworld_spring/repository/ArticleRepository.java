@@ -24,6 +24,15 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     @Query("update Article a set a.favoritesCount = a.favoritesCount - 1 where a.id = :id")
     void decreaseFavoriteCount(@Param("id") Long articleId);
 
+    /**
+     * Rebuilds every article's cached {@code favoritesCount} from the {@code article_favorites}
+     * source of truth — the counter-cache "reset_counters" equivalent, run to correct any drift.
+     * Returns the number of articles updated.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("update Article a set a.favoritesCount = (select count(f) from ArticleFavorites f where f.article.id = a.id)")
+    int reconcileFavoritesCounts();
+
     @Query("select count(f) > 0 from ArticleFavorites f where f.article.id = :articleId and f.user.id = :userId")
     boolean isFavorited(@Param("articleId") Long articleId, @Param("userId") Long userId);
 

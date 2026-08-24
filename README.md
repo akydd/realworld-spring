@@ -106,6 +106,29 @@ make e2e HOST=http://localhost:8080 HURL_DIR=../realworld/specs/api/hurl
 Two helper targets manage the throwaway DB on its own — `make test-db-up` and `make test-db-down` —
 handy when iterating on Hurl files against an app you are already running.
 
+### Maintenance commands (Spring Shell)
+
+One-off maintenance tasks are exposed as [Spring Shell](https://spring.io/projects/spring-shell)
+commands. The interactive shell is disabled (`spring.shell.interactive.enabled=false`), so a normal
+launch is unaffected — a command runs only when passed as an argument, then the process exits.
+
+`reconcile-counts` rebuilds every article's cached `favoritesCount` from the `article_favorites`
+source of truth (see [Favorites count](#favorites-count-a-denormalized-counter-cache)):
+
+```bash
+SPRING_MAIN_WEB_APPLICATION_TYPE=none \
+SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:<port>/<db> \
+SPRING_DATASOURCE_USERNAME=<user> SPRING_DATASOURCE_PASSWORD=<pass> \
+java -jar build/libs/*-SNAPSHOT.jar reconcile-counts
+```
+
+It prints e.g. `Reconciled favoritesCount for 12 article(s).` and exits.
+
+**Pass configuration as environment variables, not `--flags`.** Spring Shell treats the whole
+program-argument list as the command line, so `--spring.*` flags would be parsed as (unexpected)
+arguments to `reconcile-counts` and fail. `SPRING_MAIN_WEB_APPLICATION_TYPE=none` keeps it a plain
+process — no web server — that runs the command and exits.
+
 ## Authentication notes
 
 - The API expects the RealWorld auth scheme: `Authorization: Token <jwt>` (not `Bearer`).
@@ -114,6 +137,29 @@ handy when iterating on Hurl files against an app you are already running.
   invalidate outstanding tokens (or, worse, let a recycled name resolve to a different user) after a
   rename. Login authenticates by email; the token then carries the id; the auth filter resolves the
   caller by id.
+
+## Favorites count: a denormalized counter cache
+
+`Article.favoritesCount` is a **denormalized counter cache**: the favorite count is stored on the
+article row rather than derived with `count(*)` on every read. This mirrors Rails' `counter_cache`
+and exists for the same reason — the feed and list endpoints return many articles at once, so
+deriving the count would mean a `count` per article; a plain column read is far cheaper at volume.
+
+The counter is maintained incrementally: `favorite`/`unfavorite` adjust it with an atomic
+`favoritesCount = favoritesCount ± 1` in the **same transaction** as the `article_favorites` link
+change, so the two stay consistent within the app (and a duplicate-favorite race loses on the
+`article_favorites` composite key, rolling its increment back).
+
+**The trade-off** is that a cached count can still drift from the source of truth — a bulk import,
+direct SQL, or a bug that touches `article_favorites` without going through the service. So, as Rails
+ships `reset_counters`, there is a reconciliation that rebuilds every counter from the join table in
+one statement (`ArticleRepository.reconcileFavoritesCounts`), exposed as the `reconcile-counts`
+[maintenance command](#maintenance-commands-spring-shell). It is safe to run against a live app
+(it's a pure DB operation), ideally during a quiet period — a favorite committing mid-run could
+leave that one article a hair stale until the next run.
+
+> At this project's data volume the counter is arguably premature; deriving the count on read would
+> be simpler and drift-proof. It is kept deliberately, to exercise the counter-cache pattern.
 
 ## Development issues encountered
 
