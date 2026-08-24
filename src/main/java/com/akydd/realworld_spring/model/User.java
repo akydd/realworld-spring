@@ -31,13 +31,7 @@ public class User implements UserDetails {
 
     @Transient
     private String token;
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "follows",
-            joinColumns = @JoinColumn(name = "follower_id"),
-            inverseJoinColumns = @JoinColumn(name = "following_id")
-    )
-    private Set<User> following = new HashSet<>();
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "article_favorites",
@@ -114,23 +108,7 @@ public class User implements UserDetails {
     public String getRealUsername() {
         return username;
     }
-
-    public Set<User> getFollowing() {
-        return following;
-    }
-
-    public void setFollowing(Set<User> following) {
-        this.following = following;
-    }
-
-    public void addFollowing(User user) {
-        this.following.add(user);
-    }
-
-    public void removeFollowing(User user) {
-        this.following.remove(user);
-    }
-
+    
     public Set<Article> getFavorites() {
         return favorites;
     }

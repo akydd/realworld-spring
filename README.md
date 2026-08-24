@@ -161,6 +161,37 @@ leave that one article a hair stale until the next run.
 > At this project's data volume the counter is arguably premature; deriving the count on read would
 > be simpler and drift-proof. It is kept deliberately, to exercise the counter-cache pattern.
 
+## Follows: a join entity, not a `@ManyToMany`
+
+The follow relationship is modelled as a dedicated **join entity** — `Follows`, with a composite
+`@EmbeddedId` over `(follower_id, following_id)` and two `@MapsId` associations — rather than a JPA
+`@ManyToMany Set<User>` collection on `User`. This is a deliberate choice for **lookup cost at
+scale**.
+
+With a `@ManyToMany` collection, following someone reads as:
+
+```java
+if (!me.getFollowing().contains(target)) { me.addFollowing(target); }
+```
+
+but `getFollowing().contains(...)` forces Hibernate to **fully initialize the collection** — it loads
+*every* user you already follow into memory just to answer one membership question and insert one
+row. For someone who follows hundreds of thousands of accounts, a single follow/unfollow becomes
+O(N) in rows and memory. It doesn't scale.
+
+Through the join entity, every operation is an O(1) primary-key access and no collection is ever
+hydrated:
+
+- **follow** → `existsById(id)` (PK index lookup), then `save(new Follows(me, target))`
+- **unfollow** → `existsById(id)`, then `deleteById(id)`
+- **"is X following Y?"**, and the feed/list `following` flags → indexed `exists`/`count` queries
+  against `Follows` (`UserRepository.isFollowing` and the `ArticleRepository` list/feed subqueries)
+
+The composite primary key `(follower_id, following_id)` is the source of truth and makes the writes
+naturally idempotent — a duplicate follow can't create a second row. `User` holds no follows
+collection at all; `Follows` is the single representation, used for both reads and writes. (The same
+reasoning applies to article favorites via `article_favorites`.)
+
 ## Development issues encountered
 
 Notes on non-obvious problems hit while building this, kept for future reference.

@@ -1,8 +1,11 @@
 package com.akydd.realworld_spring.service;
 
 import com.akydd.realworld_spring.exception.NotFoundException;
+import com.akydd.realworld_spring.model.Follows;
+import com.akydd.realworld_spring.model.FollowsId;
 import com.akydd.realworld_spring.model.Profile;
 import com.akydd.realworld_spring.model.User;
+import com.akydd.realworld_spring.repository.FollowsRepository;
 import com.akydd.realworld_spring.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,19 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProfileServiceImpl implements ProfileService {
 
     private final UserRepository userRepository;
+    private final FollowsRepository followsRepository;
 
-    public ProfileServiceImpl(UserRepository userRepository) {
+    public ProfileServiceImpl(UserRepository userRepository, FollowsRepository followsRepository) {
         this.userRepository = userRepository;
+        this.followsRepository = followsRepository;
     }
 
     @Transactional
     public Profile follow(User user, String username) {
         User userToFollow = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
-        User me = userRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalStateException("authenticated user " + user.getId() + " not found"));
 
-        if (!me.getFollowing().contains(userToFollow)) {
-            me.addFollowing(userToFollow);
+        // O(1) via the follows primary key — no collection load. Idempotent: following twice is a no-op.
+        FollowsId id = new FollowsId(user.getId(), userToFollow.getId());
+        if (!followsRepository.existsById(id)) {
+            followsRepository.save(new Follows(userRepository.getReferenceById(user.getId()), userToFollow));
         }
 
         return toProfile(userToFollow, true);
@@ -32,11 +37,10 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional
     public Profile unfollow(User user, String username) {
         User userToUnfollow = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
-        User me = userRepository.findById(user.getId())
-                .orElseThrow(() -> new IllegalStateException("authenticated user " + user.getId() + " not found"));
 
-        if (me.getFollowing().contains(userToUnfollow)) {
-            me.removeFollowing(userToUnfollow);
+        FollowsId id = new FollowsId(user.getId(), userToUnfollow.getId());
+        if (followsRepository.existsById(id)) {
+            followsRepository.deleteById(id);
         }
 
         return toProfile(userToUnfollow, false);

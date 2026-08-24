@@ -22,14 +22,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class ArticleServiceImpl implements ArticleService {
+    // Retry ceiling for slug collisions (a collision at all is already rare).
+    private static final int MAX_SLUG_ATTEMPTS = 20;
     private final ArticleRepository articleRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
-
-    // Retry ceiling for slug collisions (a collision at all is already rare).
-    private static final int MAX_SLUG_ATTEMPTS = 20;
-
     // Self-reference so createOnce() is called THROUGH the Spring proxy: each retry attempt must run
     // in its own transaction. A unique-constraint violation marks the current transaction
     // rollback-only and poisons the persistence context, so we cannot catch it and re-save inside the
@@ -42,6 +40,15 @@ public class ArticleServiceImpl implements ArticleService {
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.self = self;
+    }
+
+    /**
+     * True when the failure is the articles.slug UNIQUE violation (Postgres names it articles_slug_key).
+     */
+    private static boolean isSlugConflict(DataIntegrityViolationException e) {
+        return e.getCause() instanceof ConstraintViolationException cve
+                && cve.getConstraintName() != null
+                && cve.getConstraintName().toLowerCase().contains("slug");
     }
 
     // NOT @Transactional: this owns the retry loop, so each attempt below gets a fresh transaction.
@@ -87,13 +94,6 @@ public class ArticleServiceImpl implements ArticleService {
         // fails this INSERT and leaves the entity transient (id null) — safe to retry with a new slug.
         Article newArticle = articleRepository.save(article);
         return new ArticleView(newArticle, false, false);
-    }
-
-    /** True when the failure is the articles.slug UNIQUE violation (Postgres names it articles_slug_key). */
-    private static boolean isSlugConflict(DataIntegrityViolationException e) {
-        return e.getCause() instanceof ConstraintViolationException cve
-                && cve.getConstraintName() != null
-                && cve.getConstraintName().toLowerCase().contains("slug");
     }
 
     @Transactional
