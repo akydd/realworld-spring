@@ -2,7 +2,7 @@ package com.akydd.realworld_spring.controller;
 
 import com.akydd.realworld_spring.dto.LoginUserRequest;
 import com.akydd.realworld_spring.dto.RegisterUserRequest;
-import com.akydd.realworld_spring.dto.UserResponse;
+import com.akydd.realworld_spring.dto.UserEnvelope;
 import com.akydd.realworld_spring.mapper.UserMapper;
 import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.service.UserService;
@@ -27,16 +27,16 @@ public class UsersController {
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody RegisterUserRequest registerUserRequest) {
+    public ResponseEntity<UserEnvelope> registerUser(@Valid @RequestBody RegisterUserRequest registerUserRequest) {
         User model = userMapper.toEntity(registerUserRequest);
         User userResponse = userService.registerUser(model);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(userMapper.toDTO(userResponse));
+                .body(new UserEnvelope(userMapper.toDTO(userResponse)));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> loginUser(@Valid @RequestBody LoginUserRequest loginUserRequest) {
+    public ResponseEntity<UserEnvelope> loginUser(@Valid @RequestBody LoginUserRequest loginUserRequest) {
         User user = userService.loginUser(loginUserRequest.email(), loginUserRequest.password());
-        return ResponseEntity.ok(userMapper.toDTO(user));
+        return ResponseEntity.ok(new UserEnvelope(userMapper.toDTO(user)));
     }
 }

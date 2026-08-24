@@ -9,12 +9,9 @@ import com.akydd.realworld_spring.model.User;
 import com.akydd.realworld_spring.service.ArticleService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.SerializationFeature;
 
 import java.util.List;
 
@@ -24,25 +21,23 @@ public class ArticleController {
     private final ArticleService articleService;
     private final ArticleMapper articleMapper;
     private final CommentMapper commentMapper;
-    private final ObjectMapper objectMapper;
 
-    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, CommentMapper commentMapper, ObjectMapper objectMapper) {
+    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, CommentMapper commentMapper) {
         this.articleService = articleService;
         this.articleMapper = articleMapper;
         this.commentMapper = commentMapper;
-        this.objectMapper = objectMapper;
     }
 
     @PostMapping
-    public ResponseEntity<ArticleResponse> save(@AuthenticationPrincipal User author, @Valid @RequestBody CreateArticleRequest article) {
+    public ResponseEntity<ArticleEnvelope> save(@AuthenticationPrincipal User author, @Valid @RequestBody CreateArticleRequest article) {
         ArticleView newArticle = articleService.create(author, articleMapper.toEntity(article), article.tagList());
-        return ResponseEntity.status(HttpStatus.CREATED).body(articleMapper.toResponse(newArticle));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ArticleEnvelope(articleMapper.toResponse(newArticle)));
     }
 
     @PutMapping("{slug}")
-    public ResponseEntity<ArticleResponse> update(@AuthenticationPrincipal User user, @PathVariable String slug, @Valid @RequestBody UpdateArticleRequest update) {
+    public ResponseEntity<ArticleEnvelope> update(@AuthenticationPrincipal User user, @PathVariable String slug, @Valid @RequestBody UpdateArticleRequest update) {
         ArticleView updatedArticle = articleService.update(user, slug, articleMapper.toEntity(update));
-        return ResponseEntity.ok(articleMapper.toResponse(updatedArticle));
+        return ResponseEntity.ok(new ArticleEnvelope(articleMapper.toResponse(updatedArticle)));
     }
 
     @DeleteMapping("{slug}")
@@ -52,27 +47,27 @@ public class ArticleController {
     }
 
     @PostMapping("{slug}/favorite")
-    public ResponseEntity<ArticleResponse> favorite(@AuthenticationPrincipal User user, @PathVariable String slug) {
+    public ResponseEntity<ArticleEnvelope> favorite(@AuthenticationPrincipal User user, @PathVariable String slug) {
         ArticleView favoriteArticle = articleService.favorite(user, slug);
-        return ResponseEntity.ok(articleMapper.toResponse(favoriteArticle));
+        return ResponseEntity.ok(new ArticleEnvelope(articleMapper.toResponse(favoriteArticle)));
     }
 
     @DeleteMapping("{slug}/favorite")
-    public ResponseEntity<ArticleResponse> unfavorite(@AuthenticationPrincipal User user, @PathVariable String slug) {
+    public ResponseEntity<ArticleEnvelope> unfavorite(@AuthenticationPrincipal User user, @PathVariable String slug) {
         ArticleView favoriteArticle = articleService.unfavorite(user, slug);
-        return ResponseEntity.ok(articleMapper.toResponse(favoriteArticle));
+        return ResponseEntity.ok(new ArticleEnvelope(articleMapper.toResponse(favoriteArticle)));
     }
 
     @GetMapping("{slug}")
-    public ResponseEntity<ArticleResponse> getArticle(@AuthenticationPrincipal User user, @PathVariable String slug) {
+    public ResponseEntity<ArticleEnvelope> getArticle(@AuthenticationPrincipal User user, @PathVariable String slug) {
         ArticleView articleView = articleService.getBySlug(user, slug);
-        return ResponseEntity.ok(articleMapper.toResponse(articleView));
+        return ResponseEntity.ok(new ArticleEnvelope(articleMapper.toResponse(articleView)));
     }
 
     @PostMapping("{slug}/comments")
-    public ResponseEntity<CommentResponse> addComment(@AuthenticationPrincipal User user, @PathVariable String slug, @Valid @RequestBody CreateCommentRequest comment) {
+    public ResponseEntity<CommentEnvelope> addComment(@AuthenticationPrincipal User user, @PathVariable String slug, @Valid @RequestBody CreateCommentRequest comment) {
         CommentView newComment = articleService.addComment(user, slug, commentMapper.toEntity(comment));
-        return ResponseEntity.status(HttpStatus.CREATED).body(commentMapper.toResponse(newComment));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new CommentEnvelope(commentMapper.toResponse(newComment)));
     }
 
     @DeleteMapping("{slug}/comments/{id}")
@@ -88,28 +83,19 @@ public class ArticleController {
     }
 
     @GetMapping
-    public ResponseEntity<String> getArticles(@AuthenticationPrincipal User user,
-                                              @RequestParam(required = false) String tag,
-                                              @RequestParam(required = false) String author,
-                                              @RequestParam(required = false) String favorited,
-                                              @RequestParam(required = false) Integer limit,
-                                              @RequestParam(required = false) Integer offset) {
-        return unwrapped(articleService.getAllArticles(user, tag, author, favorited, limit, offset));
+    public ResponseEntity<ArticlesResponse> getArticles(@AuthenticationPrincipal User user,
+                                                        @RequestParam(required = false) String tag,
+                                                        @RequestParam(required = false) String author,
+                                                        @RequestParam(required = false) String favorited,
+                                                        @RequestParam(required = false) Integer limit,
+                                                        @RequestParam(required = false) Integer offset) {
+        return ResponseEntity.ok(articleService.getAllArticles(user, tag, author, favorited, limit, offset));
     }
 
     @GetMapping("/feed")
-    public ResponseEntity<String> getFeed(@AuthenticationPrincipal User user,
-                                          @RequestParam(required = false) Integer limit,
-                                          @RequestParam(required = false) Integer offset) {
-        return unwrapped(articleService.getFeed(user, limit, offset));
-    }
-
-    // The list/feed response has two top-level keys ({"articles":[...],"articlesCount":N}), which the
-    // app's global WRAP_ROOT_VALUE can't express — serialize it here with wrapping disabled.
-    private ResponseEntity<String> unwrapped(ArticlesResponse body) {
-        String json = objectMapper.writer()
-                .without(SerializationFeature.WRAP_ROOT_VALUE)
-                .writeValueAsString(body);
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json);
+    public ResponseEntity<ArticlesResponse> getFeed(@AuthenticationPrincipal User user,
+                                                    @RequestParam(required = false) Integer limit,
+                                                    @RequestParam(required = false) Integer offset) {
+        return ResponseEntity.ok(articleService.getFeed(user, limit, offset));
     }
 }
