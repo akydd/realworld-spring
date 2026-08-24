@@ -33,9 +33,6 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
     @Query("update Article a set a.favoritesCount = (select count(f) from ArticleFavorites f where f.article.id = a.id)")
     int reconcileFavoritesCounts();
 
-    @Query("select count(f) > 0 from ArticleFavorites f where f.article.id = :articleId and f.user.id = :userId")
-    boolean isFavorited(@Param("articleId") Long articleId, @Param("userId") Long userId);
-
     // --- List with optional filters (author / tag / favorited-by), viewer-relative flags computed ---
 
     @Query("""

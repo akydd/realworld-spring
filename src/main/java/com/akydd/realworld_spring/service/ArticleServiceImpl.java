@@ -29,18 +29,20 @@ public class ArticleServiceImpl implements ArticleService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final ArticleFavoritesRepository articleFavoritesRepository;
+    private final FollowsRepository followsRepository;
     // Self-reference so createOnce() is called THROUGH the Spring proxy: each retry attempt must run
     // in its own transaction. A unique-constraint violation marks the current transaction
     // rollback-only and poisons the persistence context, so we cannot catch it and re-save inside the
     // same @Transactional method. @Lazy breaks the constructor self-dependency cycle.
     private final ArticleServiceImpl self;
 
-    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository, CommentRepository commentRepository, ArticleFavoritesRepository articleFavoritesRepository, @Lazy ArticleServiceImpl self) {
+    public ArticleServiceImpl(ArticleRepository articleRepository, TagRepository tagRepository, UserRepository userRepository, CommentRepository commentRepository, ArticleFavoritesRepository articleFavoritesRepository, FollowsRepository followsRepository, @Lazy ArticleServiceImpl self) {
         this.articleRepository = articleRepository;
         this.tagRepository = tagRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.articleFavoritesRepository = articleFavoritesRepository;
+        this.followsRepository = followsRepository;
         this.self = self;
     }
 
@@ -136,7 +138,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         Article updatedArticle = articleRepository.save(toUpdate);
         return new ArticleView(updatedArticle,
-                articleRepository.isFavorited(updatedArticle.getId(), user.getId()),
+                articleFavoritesRepository.existsById(new ArticleFavoritesId(user.getId(), updatedArticle.getId())),
                 false
         );
     }
@@ -156,7 +158,7 @@ public class ArticleServiceImpl implements ArticleService {
         Article updatedArticle = articleRepository.findById(article.getId())
                 .orElseThrow(() -> new IllegalStateException("article " + article.getId() + " disappeared mid-transaction"));
         return new ArticleView(updatedArticle, true,
-                userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
+                followsRepository.existsById(new FollowsId(user.getId(), updatedArticle.getAuthor().getId())));
     }
 
     @Transactional
@@ -174,7 +176,7 @@ public class ArticleServiceImpl implements ArticleService {
         Article updatedArticle = articleRepository.findById(article.getId())
                 .orElseThrow(() -> new IllegalStateException("article " + article.getId() + " disappeared mid-transaction"));
         return new ArticleView(updatedArticle, false,
-                userRepository.isFollowing(user.getId(), updatedArticle.getAuthor().getId()));
+                followsRepository.existsById(new FollowsId(user.getId(), updatedArticle.getAuthor().getId())));
     }
 
     @Transactional
@@ -195,8 +197,8 @@ public class ArticleServiceImpl implements ArticleService {
         Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new NotFoundException("article"));
         return new ArticleView(article,
-                user != null && articleRepository.isFavorited(article.getId(), user.getId()),
-                user != null && userRepository.isFollowing(user.getId(), article.getAuthor().getId()));
+                user != null && articleFavoritesRepository.existsById(new ArticleFavoritesId(user.getId(), article.getId())),
+                user != null && followsRepository.existsById(new FollowsId(user.getId(), article.getAuthor().getId())));
     }
 
     @Transactional
@@ -229,7 +231,7 @@ public class ArticleServiceImpl implements ArticleService {
         List<Comment> comments = commentRepository.findByArticleIdOrderByCreatedAtAsc(article.getId());
 
         return comments.stream()
-                .map(comment -> new CommentView(comment, user != null && userRepository.isFollowing(user.getId(), comment.getAuthor().getId())))
+                .map(comment -> new CommentView(comment, user != null && followsRepository.existsById(new FollowsId(user.getId(), comment.getAuthor().getId()))))
                 .toList();
     }
 

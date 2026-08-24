@@ -49,7 +49,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional
     public Profile get(User user, String username) {
         User profileUser = userRepository.findByUsername(username).orElseThrow(() -> new NotFoundException("profile"));
-        return toProfile(profileUser, user != null && userRepository.isFollowing(user.getId(), profileUser.getId()));
+        return toProfile(profileUser, user != null && followsRepository.existsById(new FollowsId(user.getId(), profileUser.getId())));
     }
 
     private Profile toProfile(User user, Boolean following) {
