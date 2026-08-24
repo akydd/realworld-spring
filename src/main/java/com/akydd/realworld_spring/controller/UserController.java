@@ -1,7 +1,7 @@
 package com.akydd.realworld_spring.controller;
 
 import com.akydd.realworld_spring.dto.UpdateUserRequest;
-import com.akydd.realworld_spring.dto.UserResponse;
+import com.akydd.realworld_spring.dto.UserEnvelope;
 import com.akydd.realworld_spring.mapper.UserMapper;
 import com.akydd.realworld_spring.mapper.UserUpdateMapper;
 import com.akydd.realworld_spring.model.User;
@@ -25,13 +25,13 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<UserResponse> currentUser(@AuthenticationPrincipal User principal) {
-        return ResponseEntity.ok(userMapper.toDTO(principal));
+    public ResponseEntity<UserEnvelope> currentUser(@AuthenticationPrincipal User principal) {
+        return ResponseEntity.ok(new UserEnvelope(userMapper.toDTO(principal)));
     }
 
     @PutMapping
-    public ResponseEntity<UserResponse> updateUser(@AuthenticationPrincipal User principal, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
+    public ResponseEntity<UserEnvelope> updateUser(@AuthenticationPrincipal User principal, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
         User user = userService.updateUser(principal, userUpdateMapper.toEntity(updateUserRequest));
-        return ResponseEntity.ok(userMapper.toDTO(user));
+        return ResponseEntity.ok(new UserEnvelope(userMapper.toDTO(user)));
     }
 }

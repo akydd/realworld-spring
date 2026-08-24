@@ -1,6 +1,6 @@
 package com.akydd.realworld_spring.controller;
 
-import com.akydd.realworld_spring.dto.ProfileResponse;
+import com.akydd.realworld_spring.dto.ProfileEnvelope;
 import com.akydd.realworld_spring.mapper.ProfileMapper;
 import com.akydd.realworld_spring.model.Profile;
 import com.akydd.realworld_spring.model.User;
@@ -22,20 +22,20 @@ public class ProfileController {
     }
 
     @PostMapping("{username}/follow")
-    public ResponseEntity<ProfileResponse> follow(@AuthenticationPrincipal User principal, @PathVariable String username) {
+    public ResponseEntity<ProfileEnvelope> follow(@AuthenticationPrincipal User principal, @PathVariable String username) {
         Profile profile = profileService.follow(principal, username);
-        return ResponseEntity.ok(profileMapper.toDTO(profile));
+        return ResponseEntity.ok(new ProfileEnvelope(profileMapper.toDTO(profile)));
     }
 
     @DeleteMapping("{username}/follow")
-    public ResponseEntity<ProfileResponse> unfollow(@AuthenticationPrincipal User principal, @PathVariable String username) {
+    public ResponseEntity<ProfileEnvelope> unfollow(@AuthenticationPrincipal User principal, @PathVariable String username) {
         Profile profile = profileService.unfollow(principal, username);
-        return ResponseEntity.ok(profileMapper.toDTO(profile));
+        return ResponseEntity.ok(new ProfileEnvelope(profileMapper.toDTO(profile)));
     }
 
     @GetMapping("{username}")
-    public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal User principal, @PathVariable String username) {
+    public ResponseEntity<ProfileEnvelope> getProfile(@AuthenticationPrincipal User principal, @PathVariable String username) {
         Profile profile = profileService.get(principal, username);
-        return ResponseEntity.ok(profileMapper.toDTO(profile));
+        return ResponseEntity.ok(new ProfileEnvelope(profileMapper.toDTO(profile)));
     }
 }
