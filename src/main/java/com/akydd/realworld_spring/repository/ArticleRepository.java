@@ -1,7 +1,6 @@
 package com.akydd.realworld_spring.repository;
 
 import com.akydd.realworld_spring.model.Article;
-import com.akydd.realworld_spring.model.ArticleSummary;
 import com.akydd.realworld_spring.model.ArticleSummaryRow;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -27,8 +26,6 @@ public interface ArticleRepository extends JpaRepository<Article, Long> {
 
     @Query("select count(f) > 0 from ArticleFavorites f where f.article.id = :articleId and f.user.id = :userId")
     boolean isFavorited(@Param("articleId") Long articleId, @Param("userId") Long userId);
-
-    List<ArticleSummary> findAllBy();
 
     // --- List with optional filters (author / tag / favorited-by), viewer-relative flags computed ---
 

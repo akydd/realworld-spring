@@ -9,6 +9,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -25,6 +26,7 @@ public class UserServiceImpl implements UserService {
         this.authenticationManager = authenticationManager;
     }
 
+    @Transactional
     public User registerUser(User user) {
         if (userRepository.findByUsername(user.getRealUsername()).isPresent()) {
             throw new DuplicateFieldException("username");
@@ -54,6 +56,7 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    @Transactional
     public User updateUser(User user, UpdateUser updateUser) {
         User userToUpdate = userRepository.findById(user.getId()).orElseThrow();
 

@@ -2,7 +2,6 @@ package com.akydd.realworld_spring.controller;
 
 import com.akydd.realworld_spring.dto.*;
 import com.akydd.realworld_spring.mapper.ArticleMapper;
-import com.akydd.realworld_spring.mapper.ArticleSummaryMapper;
 import com.akydd.realworld_spring.mapper.CommentMapper;
 import com.akydd.realworld_spring.model.ArticleView;
 import com.akydd.realworld_spring.model.CommentView;
@@ -25,14 +24,12 @@ public class ArticleController {
     private final ArticleService articleService;
     private final ArticleMapper articleMapper;
     private final CommentMapper commentMapper;
-    private final ArticleSummaryMapper articleSummaryMapper;
     private final ObjectMapper objectMapper;
 
-    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, CommentMapper commentMapper, ArticleSummaryMapper articleSummaryMapper, ObjectMapper objectMapper) {
+    public ArticleController(ArticleService articleService, ArticleMapper articleMapper, CommentMapper commentMapper, ObjectMapper objectMapper) {
         this.articleService = articleService;
         this.articleMapper = articleMapper;
         this.commentMapper = commentMapper;
-        this.articleSummaryMapper = articleSummaryMapper;
         this.objectMapper = objectMapper;
     }
 
