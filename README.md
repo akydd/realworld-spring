@@ -19,6 +19,48 @@ A Spring Boot implementation of the [RealWorld](https://realworld-docs.netlify.a
 | JSON           | Jackson 3 (`tools.jackson`, via Boot 4)   |
 | Build          | Gradle                                    |
 
+## Architecture
+
+A conventional layered Spring MVC application — **controller → service → repository → PostgreSQL** —
+with MapStruct mapping between JPA entities and JSON DTOs, and Flyway owning the schema
+(`spring.jpa.hibernate.ddl-auto=none`). Everything lives under `com.akydd.realworld_spring`:
+
+| Package      | Responsibility                                                                                                                                                        |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `controller` | Thin `@RestController`s: resolve the `@AuthenticationPrincipal`, validate the `@RequestBody` DTO, delegate to a service, wrap the result in an envelope record.        |
+| `service`    | Business logic and `@Transactional` boundaries; each service is an interface + `*Impl`.                                                                               |
+| `repository` | Spring Data JPA interfaces — derived queries, JPQL `@Query`, and query projections (`ArticleSummaryRow`, `ArticleTagRow`).                                            |
+| `model`      | JPA entities (`User`, `Article`, `Comment`, `Tag`, join entities `Follows`/`ArticleFavorites`) plus plain records used as internal commands/views (`UpdateArticle`, `ArticleView`, `Profile`, `AuthenticatedUser`). |
+| `dto`        | Request/response records and the response **envelope** records (`UserEnvelope`, `ArticleEnvelope`, …).                                                                |
+| `mapper`     | MapStruct entity ↔ DTO mappers.                                                                                                                                       |
+| `config`     | Spring Security (`SecurityConfiguration`, `JwtAuthenticationFilter`, `TokenAuthenticationEntryPoint`) and bean wiring (`AuthenticationManager`, `UserDetailsService`, `PasswordEncoder`). |
+| `exception`  | `@RestControllerAdvice` (`GlobalExceptionHandler`) mapping domain exceptions to the RealWorld `{"errors":{…}}` shape.                                                 |
+| `json`       | The `Tristate<T>` type + Jackson 3 module for tri-state `PUT` semantics.                                                                                              |
+| `shell`      | Spring Shell maintenance commands (see [Maintenance commands](#maintenance-commands-spring-shell)).                                                                   |
+| `util`       | Small helpers — `OffsetPageable` (offset/limit paging), `Slugs`.                                                                                                      |
+
+**Request lifecycle.** A request passes the Spring Security filter chain first: `JwtAuthenticationFilter`
+reads the `Authorization: Token <jwt>` header and, if present, resolves the caller **by id** into the
+security context (routes are otherwise `permitAll` or `authenticated` per `SecurityConfiguration`).
+The controller unwraps the root-keyed body (`{"article":…}`), runs bean validation, and hands a
+DTO-mapped command to the service. The service opens a transaction, does the work through
+repositories, and returns an entity/view, which the controller maps back to a DTO and wraps in an
+envelope record for Jackson to serialize.
+
+**Cross-cutting concerns:**
+
+- **Errors** — domain exceptions (`NotFoundException` → 404, `ForbiddenException` → 403,
+  `DuplicateFieldException` → 409, bean-validation → 422, `BadCredentialsException` → 401) are
+  translated centrally into `{"errors":{field:[…]}}` by `GlobalExceptionHandler`.
+- **JSON envelopes** — responses carry their RealWorld root key via explicit envelope records rather
+  than a global wrap; requests are unwrapped with `@JsonRootName` + Jackson's `unwrap-root-value`.
+- **Partial updates** — `PUT` bodies use `Tristate<T>` to distinguish *absent* from *null*.
+
+The notable data-modelling decisions have their own sections:
+[Favorites count](#favorites-count-a-denormalized-counter-cache),
+[Follows and favorites](#follows-and-favorites-join-entities-not-manytomany), and
+[`User`: persistence + auth](#user-one-class-for-persistence-and-authentication-a-known-tension).
+
 ## Running locally
 
 Prerequisites: a JDK for **Java 26** and **Docker** (used for the database).
@@ -194,6 +236,27 @@ naturally idempotent — a duplicate follow can't create a second row. Favorites
 denormalized [favorites count](#favorites-count-a-denormalized-counter-cache) inside the same guard),
 and the `favorited` flag is an indexed query. `User` holds **neither** collection — `Follows` and
 `ArticleFavorites` are the single representation of their tables, used for both reads and writes.
+
+## `User`: one class for persistence and authentication (a known tension)
+
+`model/User.java` is both the JPA `@Entity` **and** the Spring Security principal (it
+`implements UserDetails`). Carrying two roles in one class causes real friction:
+
+- **`getUsername()` can't mean what it says.** The JWT subject is the immutable user **id** (see
+  [Authentication notes](#authentication-notes)), so `UserDetails.getUsername()` is overridden to
+  return `String.valueOf(id)`, and a separate `getRealUsername()` exists for the actual username —
+  easy to grab the wrong one, and the mappers have to route around it.
+- **A transport field lives on the entity.** A `@Transient token` field exists purely to shuttle the
+  freshly minted (or echoed) JWT into the response — a serialization concern bolted onto a
+  persistence object.
+- **Security noise on the domain type.** `getAuthorities()` and the rest of the `UserDetails`
+  contract sit on the entity though they have nothing to do with the `users` table.
+
+It works, but it conflates persistence, domain, and security concerns. The intended cleanup is a
+dedicated principal — a thin `AuthenticatedUser` record (`id`, `username`) that `implements
+UserDetails`, produced by the `UserDetailsService`/JWT filter — leaving `User` a plain entity with an
+honest `getUsername()` and no token field. **Deferred for now**; the scaffolding
+(`model/AuthenticatedUser.java`) exists but is not yet wired in.
 
 ## Development issues encountered
 
