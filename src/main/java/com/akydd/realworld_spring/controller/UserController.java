@@ -25,13 +25,13 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<UserResponse> currentUser(@AuthenticationPrincipal User principle) {
-        return ResponseEntity.ok(userMapper.toDTO(principle));
+    public ResponseEntity<UserResponse> currentUser(@AuthenticationPrincipal User principal) {
+        return ResponseEntity.ok(userMapper.toDTO(principal));
     }
 
     @PutMapping
-    public ResponseEntity<UserResponse> updateUser(@AuthenticationPrincipal User principle, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
-        User user = userService.updateUser(principle, userUpdateMapper.toEntity(updateUserRequest));
+    public ResponseEntity<UserResponse> updateUser(@AuthenticationPrincipal User principal, @Valid @RequestBody UpdateUserRequest updateUserRequest) {
+        User user = userService.updateUser(principal, userUpdateMapper.toEntity(updateUserRequest));
         return ResponseEntity.ok(userMapper.toDTO(user));
     }
 }
